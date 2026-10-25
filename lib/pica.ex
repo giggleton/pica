@@ -303,7 +303,11 @@ defmodule Pica do
 
   HarfBuzz's default features for the text's script are on, and its direction and script are
   guessed from the text; the options override them. A character the font lacks shapes to glyph
-  0, `.notdef`, with its cluster. Raises `ArgumentError` for text that is not valid UTF-8, and
+  0, `.notdef`, with its cluster; Pica never draws it from another font. A character Unicode
+  marks as default-ignorable, one meant never to be drawn, such as a soft hyphen (U+00AD) or a
+  zero-width joiner (U+200D), is hidden as HarfBuzz hides it, whether or not the font has it: it
+  shapes to the font's space glyph with an `x_advance` of 0, or, in a font with no space, to no
+  glyph at all. Raises `ArgumentError` for text that is not valid UTF-8, and
   `NimbleOptions.ValidationError` for an option not of its form.
 
   ## Options
@@ -326,6 +330,12 @@ defmodule Pica do
       iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
       iex> font |> Pica.shape("office") |> Enum.map(fn glyph -> {glyph.glyph_id, glyph.cluster} end)
       [{111, 0}, {76, 1}, {49, 4}, {59, 5}]
+
+  Lato has no "★", so it is glyph 0, keeping its cluster:
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> font |> Pica.shape("A★V") |> Enum.map(fn glyph -> {glyph.glyph_id, glyph.cluster} end)
+      [{3, 0}, {0, 1}, {40, 2}]
 
   Without kerning, "A" advances as the font stores it:
 

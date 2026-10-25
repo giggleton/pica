@@ -239,6 +239,8 @@ SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-25 — Shape characters a font lacks to glyph 0, and hide invisible ones as HarfBuzz
+  does; §4: "Shaping uses HarfBuzz's defaults"
 - 2026-10-25 — Shape text through harfrust, with HarfBuzz's defaults and per-call options; §4:
   "`shape/3` shapes one string", "Each shaped glyph is a `%Pica.Glyph{}`", "Clusters count
   characters", "Shaping's options take HarfBuzz's forms"

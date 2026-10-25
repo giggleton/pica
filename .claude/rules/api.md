@@ -21,7 +21,10 @@ paths:
   installed fonts, even when the app gave another face of that family; the regular face never
   stands in for a missing bold.
 - **Pica never substitutes a font.** Names match exactly. A family found in neither place is
-  `:error`, and a character the font lacks shapes to glyph 0 with its cluster.
+  `:error`, and a character the font lacks shapes to glyph 0 with its cluster. A character
+  Unicode marks as default-ignorable, such as a soft hyphen or a zero-width joiner, is hidden as
+  HarfBuzz hides it, whether or not the font has it: the font's space glyph, advancing 0, or no
+  glyph at all in a font without a space.
 - **Generic names are ordinary names.** `""`, `"sans"`, `"serif"` and `"mono"` are never
   aliased to another family; they resolve only to a font whose family is exactly that name.
 - **Pica returns the font's numbers and HarfBuzz's positions, nothing more.** Rounding to a

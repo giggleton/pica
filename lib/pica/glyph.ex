@@ -3,7 +3,8 @@ defmodule Pica.Glyph do
   One glyph of shaped text, as `Pica.shape/3` returns it. Every length is in font units.
 
     * `:glyph_id` — which of the font's glyphs it is; 0, `.notdef`, for a character the font
-      lacks.
+      lacks. An invisible character, such as a soft hyphen, is the font's space glyph, advancing
+      0 (see `Pica.shape/3`).
     * `:cluster` — where in the text it came from: the index, counting characters (Unicode code
       points) from 0, of the first character of the cluster it belongs to. A cluster is the
       smallest run of characters and glyphs that shaping keeps together: a ligature for "ffi"

@@ -527,6 +527,54 @@
   %{
     file: "Lato-Bold.ttf",
     index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 1094, 1094, 0, 0}]
+  },
+  %{
+    file: "Lato-Bold.ttf",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{3, 0, 1389, 1389, 0, 0}, {0, 1, 1094, 1094, 0, 0}, {40, 2, 1389, 1389, 0, 0}]
+  },
+  %{
+    file: "Lato-Bold.ttf",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{138, 0, 1044, 1044, 0, 0}, {0, 1, 1094, 1094, 0, 0}, {139, 2, 1055, 1055, 0, 0}]
+  },
+  %{
+    file: "Lato-Bold.ttf",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {49, 0, 946, 964, 0, 0},
+      {111, 1, 1149, 1149, 0, 0},
+      {2, 2, 0, 486, 0, 0},
+      {111, 3, 1149, 1149, 0, 0},
+      {114, 4, 1136, 1136, 0, 0}
+    ]
+  },
+  %{
+    file: "Lato-Bold.ttf",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{45, 0, 1015, 1015, 0, 0}, {2, 0, 0, 486, 0, 0}, {48, 2, 1135, 1135, 0, 0}]
+  },
+  %{
+    file: "Lato-Bold.ttf",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{45, 0, 1015, 1015, 0, 0}, {2, 1, 0, 486, 0, 0}, {48, 2, 1135, 1135, 0, 0}]
+  },
+  %{
+    file: "Lato-Bold.ttf",
+    index: 0,
     text: "Fuel efficiency (mpg)",
     options: [features: [liga: false, clig: false, calt: false]],
     glyphs: [
@@ -1678,6 +1726,54 @@
       {0, 0, 0, 1063, 44, 1558},
       {0, 0, 1063, 1063, 0, 0}
     ]
+  },
+  %{
+    file: "Lato-Regular.ttf",
+    index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 1063, 1063, 0, 0}]
+  },
+  %{
+    file: "Lato-Regular.ttf",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{3, 0, 1354, 1354, 0, 0}, {0, 1, 1063, 1063, 0, 0}, {40, 2, 1354, 1354, 0, 0}]
+  },
+  %{
+    file: "Lato-Regular.ttf",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{138, 0, 996, 996, 0, 0}, {0, 1, 1063, 1063, 0, 0}, {139, 2, 1031, 1031, 0, 0}]
+  },
+  %{
+    file: "Lato-Regular.ttf",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {49, 0, 937, 955, 0, 0},
+      {111, 1, 1134, 1134, 0, 0},
+      {2, 2, 0, 512, 0, 0},
+      {111, 3, 1134, 1134, 0, 0},
+      {114, 4, 1121, 1121, 0, 0}
+    ]
+  },
+  %{
+    file: "Lato-Regular.ttf",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{45, 0, 994, 994, 0, 0}, {2, 0, 0, 512, 0, 0}, {48, 2, 1120, 1120, 0, 0}]
+  },
+  %{
+    file: "Lato-Regular.ttf",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{45, 0, 994, 994, 0, 0}, {2, 1, 0, 512, 0, 0}, {48, 2, 1120, 1120, 0, 0}]
   },
   %{
     file: "Lato-Regular.ttf",
@@ -2843,6 +2939,54 @@
       {1264, 0, 0, 0, 720, 0},
       {2292, 0, 1495, 1495, 0, 0}
     ]
+  },
+  %{
+    file: "LiberationSans-Regular.ttf",
+    index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 1536, 1536, 0, 0}]
+  },
+  %{
+    file: "LiberationSans-Regular.ttf",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{36, 0, 1366, 1366, 0, 0}, {0, 1, 1536, 1536, 0, 0}, {57, 2, 1366, 1366, 0, 0}]
+  },
+  %{
+    file: "LiberationSans-Regular.ttf",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{91, 0, 1024, 1024, 0, 0}, {0, 1, 1536, 1536, 0, 0}, {92, 2, 1024, 1024, 0, 0}]
+  },
+  %{
+    file: "LiberationSans-Regular.ttf",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {70, 0, 1024, 1024, 0, 0},
+      {82, 1, 1139, 1139, 0, 0},
+      {3, 2, 0, 569, 0, 0},
+      {82, 3, 1139, 1139, 0, 0},
+      {83, 4, 1139, 1139, 0, 0}
+    ]
+  },
+  %{
+    file: "LiberationSans-Regular.ttf",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{68, 0, 1139, 1139, 0, 0}, {3, 0, 0, 569, 0, 0}, {69, 2, 1139, 1139, 0, 0}]
+  },
+  %{
+    file: "LiberationSans-Regular.ttf",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{68, 0, 1139, 1139, 0, 0}, {3, 1, 0, 569, 0, 0}, {69, 2, 1139, 1139, 0, 0}]
   },
   %{
     file: "LiberationSans-Regular.ttf",
@@ -4013,6 +4157,54 @@
   %{
     file: "Lobster-Regular.ttf",
     index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 810, 810, 0, 0}]
+  },
+  %{
+    file: "Lobster-Regular.ttf",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{4, 0, 668, 668, 0, 0}, {0, 1, 810, 810, 0, 0}, {201, 2, 615, 615, 0, 0}]
+  },
+  %{
+    file: "Lobster-Regular.ttf",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{475, 0, 500, 500, 0, 0}, {0, 1, 810, 810, 0, 0}, {476, 2, 460, 460, 0, 0}]
+  },
+  %{
+    file: "Lobster-Regular.ttf",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {255, 0, 384, 384, 0, 0},
+      {347, 1, 439, 439, 0, 0},
+      {3, 2, 0, 217, 0, 0},
+      {347, 3, 439, 439, 0, 0},
+      {376, 4, 468, 468, 0, 0}
+    ]
+  },
+  %{
+    file: "Lobster-Regular.ttf",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{226, 0, 526, 526, 0, 0}, {3, 0, 0, 217, 0, 0}, {254, 2, 444, 444, 0, 0}]
+  },
+  %{
+    file: "Lobster-Regular.ttf",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{226, 0, 526, 526, 0, 0}, {3, 1, 0, 217, 0, 0}, {254, 2, 444, 444, 0, 0}]
+  },
+  %{
+    file: "Lobster-Regular.ttf",
+    index: 0,
     text: "Fuel efficiency (mpg)",
     options: [features: [liga: false, clig: false, calt: false]],
     glyphs: [
@@ -5163,6 +5355,54 @@
       {0, 0, 0, 908, 100, 1584},
       {0, 0, 908, 908, 0, 0}
     ]
+  },
+  %{
+    file: "Roboto-Bare.ttf",
+    index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 908, 908, 0, 0}]
+  },
+  %{
+    file: "Roboto-Bare.ttf",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{37, 0, 1336, 1336, 0, 0}, {0, 1, 908, 908, 0, 0}, {58, 2, 1304, 1304, 0, 0}]
+  },
+  %{
+    file: "Roboto-Bare.ttf",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{92, 0, 1016, 1016, 0, 0}, {0, 1, 908, 908, 0, 0}, {93, 2, 969, 969, 0, 0}]
+  },
+  %{
+    file: "Roboto-Bare.ttf",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {71, 0, 1072, 1072, 0, 0},
+      {83, 1, 1168, 1168, 0, 0},
+      {4, 2, 0, 508, 0, 0},
+      {83, 3, 1168, 1168, 0, 0},
+      {84, 4, 1150, 1150, 0, 0}
+    ]
+  },
+  %{
+    file: "Roboto-Bare.ttf",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{69, 0, 1114, 1114, 0, 0}, {4, 0, 0, 508, 0, 0}, {70, 2, 1150, 1150, 0, 0}]
+  },
+  %{
+    file: "Roboto-Bare.ttf",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{69, 0, 1114, 1114, 0, 0}, {4, 1, 0, 508, 0, 0}, {70, 2, 1150, 1150, 0, 0}]
   },
   %{
     file: "Roboto-Bare.ttf",
@@ -6322,6 +6562,54 @@
       {0, 0, 0, 908, 100, 1584},
       {0, 0, 908, 908, 0, 0}
     ]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 908, 908, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{37, 0, 1336, 1336, 0, 0}, {0, 1, 908, 908, 0, 0}, {58, 2, 1304, 1304, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{92, 0, 1016, 1016, 0, 0}, {0, 1, 908, 908, 0, 0}, {93, 2, 969, 969, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {71, 0, 1072, 1072, 0, 0},
+      {83, 1, 1168, 1168, 0, 0},
+      {4, 2, 0, 508, 0, 0},
+      {83, 3, 1168, 1168, 0, 0},
+      {84, 4, 1150, 1150, 0, 0}
+    ]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{69, 0, 1114, 1114, 0, 0}, {4, 0, 0, 508, 0, 0}, {70, 2, 1150, 1150, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{69, 0, 1114, 1114, 0, 0}, {4, 1, 0, 508, 0, 0}, {70, 2, 1150, 1150, 0, 0}]
   },
   %{
     file: "Roboto-Collection.ttc",
@@ -7485,6 +7773,54 @@
   %{
     file: "Roboto-Collection.ttc",
     index: 1,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 908, 908, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 1,
+    text: "A★V",
+    options: [],
+    glyphs: [{37, 0, 1376, 1376, 0, 0}, {0, 1, 908, 908, 0, 0}, {58, 2, 1338, 1338, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 1,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{92, 0, 1042, 1042, 0, 0}, {0, 1, 908, 908, 0, 0}, {93, 2, 1031, 1031, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 1,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {71, 0, 1067, 1067, 0, 0},
+      {83, 1, 1156, 1156, 0, 0},
+      {4, 2, 0, 509, 0, 0},
+      {83, 3, 1156, 1156, 0, 0},
+      {84, 4, 1152, 1152, 0, 0}
+    ]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 1,
+    text: "a‍b",
+    options: [],
+    glyphs: [{69, 0, 1096, 1096, 0, 0}, {4, 0, 0, 509, 0, 0}, {70, 2, 1152, 1152, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 1,
+    text: "a​b",
+    options: [],
+    glyphs: [{69, 0, 1096, 1096, 0, 0}, {4, 1, 0, 509, 0, 0}, {70, 2, 1152, 1152, 0, 0}]
+  },
+  %{
+    file: "Roboto-Collection.ttc",
+    index: 1,
     text: "Fuel efficiency (mpg)",
     options: [features: [liga: false, clig: false, calt: false]],
     glyphs: [
@@ -8640,6 +8976,54 @@
       {0, 0, 0, 908, 100, 1584},
       {0, 0, 908, 908, 0, 0}
     ]
+  },
+  %{
+    file: "Roboto[wdth,wght].ttf",
+    index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 908, 908, 0, 0}]
+  },
+  %{
+    file: "Roboto[wdth,wght].ttf",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{37, 0, 1336, 1336, 0, 0}, {0, 1, 908, 908, 0, 0}, {58, 2, 1304, 1304, 0, 0}]
+  },
+  %{
+    file: "Roboto[wdth,wght].ttf",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{92, 0, 1016, 1016, 0, 0}, {0, 1, 908, 908, 0, 0}, {93, 2, 969, 969, 0, 0}]
+  },
+  %{
+    file: "Roboto[wdth,wght].ttf",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {71, 0, 1072, 1072, 0, 0},
+      {83, 1, 1168, 1168, 0, 0},
+      {4, 2, 0, 508, 0, 0},
+      {83, 3, 1168, 1168, 0, 0},
+      {84, 4, 1150, 1150, 0, 0}
+    ]
+  },
+  %{
+    file: "Roboto[wdth,wght].ttf",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{69, 0, 1114, 1114, 0, 0}, {4, 0, 0, 508, 0, 0}, {70, 2, 1150, 1150, 0, 0}]
+  },
+  %{
+    file: "Roboto[wdth,wght].ttf",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{69, 0, 1114, 1114, 0, 0}, {4, 1, 0, 508, 0, 0}, {70, 2, 1150, 1150, 0, 0}]
   },
   %{
     file: "Roboto[wdth,wght].ttf",
@@ -9802,6 +10186,54 @@
   %{
     file: "SourceSerif4-Regular.otf",
     index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 640, 640, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{2, 0, 664, 664, 0, 0}, {0, 1, 640, 640, 0, 0}, {23, 2, 674, 674, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{51, 0, 526, 526, 0, 0}, {0, 1, 640, 640, 0, 0}, {52, 2, 512, 512, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {30, 0, 488, 488, 0, 0},
+      {42, 1, 549, 549, 0, 0},
+      {1, 2, 0, 233, 0, 0},
+      {42, 3, 539, 549, 0, 0},
+      {43, 4, 583, 583, 0, 0}
+    ]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{28, 0, 509, 509, 0, 0}, {1, 0, 0, 233, 0, 0}, {29, 2, 577, 577, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{28, 0, 509, 509, 0, 0}, {1, 1, 0, 233, 0, 0}, {29, 2, 577, 577, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf",
+    index: 0,
     text: "Fuel efficiency (mpg)",
     options: [features: [liga: false, clig: false, calt: false]],
     glyphs: [
@@ -10959,6 +11391,54 @@
   %{
     file: "SourceSerif4-Regular.otf.woff2",
     index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 640, 640, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf.woff2",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{2, 0, 664, 664, 0, 0}, {0, 1, 640, 640, 0, 0}, {23, 2, 674, 674, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf.woff2",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{51, 0, 526, 526, 0, 0}, {0, 1, 640, 640, 0, 0}, {52, 2, 512, 512, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf.woff2",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {30, 0, 488, 488, 0, 0},
+      {42, 1, 549, 549, 0, 0},
+      {1, 2, 0, 233, 0, 0},
+      {42, 3, 539, 549, 0, 0},
+      {43, 4, 583, 583, 0, 0}
+    ]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf.woff2",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{28, 0, 509, 509, 0, 0}, {1, 0, 0, 233, 0, 0}, {29, 2, 577, 577, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf.woff2",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{28, 0, 509, 509, 0, 0}, {1, 1, 0, 233, 0, 0}, {29, 2, 577, 577, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.otf.woff2",
+    index: 0,
     text: "Fuel efficiency (mpg)",
     options: [features: [liga: false, clig: false, calt: false]],
     glyphs: [
@@ -12112,6 +12592,54 @@
       {0, 0, 0, 640, 80, 732},
       {0, 0, 640, 640, 0, 0}
     ]
+  },
+  %{
+    file: "SourceSerif4-Regular.ttf.woff",
+    index: 0,
+    text: "★",
+    options: [],
+    glyphs: [{0, 0, 640, 640, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.ttf.woff",
+    index: 0,
+    text: "A★V",
+    options: [],
+    glyphs: [{2, 0, 664, 664, 0, 0}, {0, 1, 640, 640, 0, 0}, {23, 2, 674, 674, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.ttf.woff",
+    index: 0,
+    text: "x𝐀y",
+    options: [],
+    glyphs: [{51, 0, 526, 526, 0, 0}, {0, 1, 640, 640, 0, 0}, {52, 2, 512, 512, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.ttf.woff",
+    index: 0,
+    text: "co­op",
+    options: [],
+    glyphs: [
+      {30, 0, 488, 488, 0, 0},
+      {42, 1, 549, 549, 0, 0},
+      {1, 2, 0, 233, 0, 0},
+      {42, 3, 539, 549, 0, 0},
+      {43, 4, 583, 583, 0, 0}
+    ]
+  },
+  %{
+    file: "SourceSerif4-Regular.ttf.woff",
+    index: 0,
+    text: "a‍b",
+    options: [],
+    glyphs: [{28, 0, 509, 509, 0, 0}, {1, 0, 0, 233, 0, 0}, {29, 2, 577, 577, 0, 0}]
+  },
+  %{
+    file: "SourceSerif4-Regular.ttf.woff",
+    index: 0,
+    text: "a​b",
+    options: [],
+    glyphs: [{28, 0, 509, 509, 0, 0}, {1, 1, 0, 233, 0, 0}, {29, 2, 577, 577, 0, 0}]
   },
   %{
     file: "SourceSerif4-Regular.ttf.woff",

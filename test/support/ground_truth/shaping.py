@@ -57,6 +57,12 @@ LIGATURES = ["ffi", "ffl", "affluent fjord"]
 ACCENTS = ["é", "ü", "é", "ü", "café naïve über", "ậ"]
 # An Arabic label ("hello") and a Hebrew one ("peace"), unpointed and pointed: right to left.
 RIGHT_TO_LEFT = ["مرحبا", "שלום", "שָׁלוֹם"]
+# Characters a font may lack: the black star (U+2605), alone and between letters, and the
+# mathematical bold capital A (U+1D400), past the Basic Multilingual Plane, so one character of
+# four UTF-8 bytes. Then characters Unicode marks as default-ignorable, which HarfBuzz hides
+# rather than drawing as missing: a soft hyphen (U+00AD), a zero-width joiner (U+200D) and a
+# zero-width space (U+200B).
+MISSING = ["★", "A★V", "x\U0001d400y", "co\u00adop", "a\u200db", "a\u200bb"]
 
 NO_LIGATURES = [("liga", False), ("clig", False), ("calt", False)]
 NO_KERNING = [("kern", False)]
@@ -82,7 +88,7 @@ def options(features=(), **settings):
 
 CASES = (
     [(text, options()) for text in R_WIDTHS + R_SHAPED + DIGITS + PUNCTUATION + LIGATURES]
-    + [(text, options()) for text in ACCENTS + RIGHT_TO_LEFT]
+    + [(text, options()) for text in ACCENTS + RIGHT_TO_LEFT + MISSING]
     + [
         (text, options(features=features))
         for text in R_SHAPED
