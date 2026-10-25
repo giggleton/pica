@@ -10,8 +10,8 @@ uncovered-file budget.
 
 The checks the harness ships — `Tack.Credo.Check.NoCaptureOperator`, `PublicFunctionDoc`,
 `SyncTestBlocker`, `AsyncEnvMutation`, `SleepInTest`, `TimestampRewriteInTest`, `CorePurity` —
-come from the `tack` package and need no copy here. Add a file here only for a rule
-specific to this repo.
+are compiled from `dev/tack/`, Tack's code copied in, and need no copy here. Add a file here
+only for a rule specific to this repo.
 
 Four things hold a new check together (`.claude/rules/dependencies.md` has the full version):
 

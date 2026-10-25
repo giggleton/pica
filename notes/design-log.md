@@ -140,6 +140,14 @@ Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet h
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
 commit gate's mutation rule. Rejected: `mix tack.install` — it would install the older templates.
 
+**Tack's code is copied into `dev/`, not depended on** (Steve, 2026-10-24). Tack's repository is
+private, so CI could not fetch the `tack` dependency. The gate runner, the rules check, the
+boundary scanner, the credo checks and their tests are copied byte for byte from Tack's commit
+9ae74d8, compiled in dev and test only, and left out of the package; the copied mix tasks and the
+`Tack` boundary were approved one at a time. Rejected: making Tack public (no change to Pica, but
+Tack stays private); dropping Tack and its checks (the gate would lose the rules it enforces); a
+CI deploy key for Tack (CI would pass, but a contributor still could not run the gate).
+
 ## 5. Testing approach
 
 Expected values come from outside tools, never from Pica's own output: fontTools in
@@ -154,6 +162,8 @@ SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-24 — Copy Tack's gate tooling into dev/ so CI needs no private repository; §4: "Tack's
+  code is copied into `dev/`"
 - 2026-10-24 — Start Pica: a NIF skeleton built from source, Giggly's harness, and the plan's
   decisions settled; §4: every entry
 

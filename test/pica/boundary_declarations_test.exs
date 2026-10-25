@@ -16,9 +16,15 @@ defmodule Pica.BoundaryDeclarationsTest do
 
   @umbrella "lib/pica.ex"
 
+  # The compiled source a declaration can sit in: the library, and the gate's tooling copied from
+  # Tack, which is compiled too and could weaken the compiler as quietly. Test support is read by
+  # the test that needs it.
+  @declared_roots ["lib", "dev"]
+
   test "no declaration disables a check except where sanctioned, with a stated reason" do
     unsanctioned =
-      for path <- BoundaryDeclarations.source_files("lib"),
+      for root <- @declared_roots,
+          path <- BoundaryDeclarations.source_files(root),
           {token, effect} <- BoundaryDeclarations.disabled_checks_in(path),
           not Map.has_key?(@sanctioned, {path, token}),
           do: "  #{path}: #{token} — #{effect}"
@@ -49,7 +55,8 @@ defmodule Pica.BoundaryDeclarationsTest do
 
   test "only the umbrella uses exports: :all" do
     offenders =
-      for path <- BoundaryDeclarations.source_files("lib"),
+      for root <- @declared_roots,
+          path <- BoundaryDeclarations.source_files(root),
           path != @umbrella,
           BoundaryDeclarations.exports_all_in?(path),
           do: path
@@ -72,9 +79,8 @@ defmodule Pica.BoundaryDeclarationsTest do
 
   test "no declaration relaxes the strict default" do
     relaxed =
-      for path <-
-            BoundaryDeclarations.source_files("lib") ++
-              BoundaryDeclarations.source_files("test/support"),
+      for root <- ["test/support" | @declared_roots],
+          path <- BoundaryDeclarations.source_files(root),
           declaration <- BoundaryDeclarations.declarations_in(path),
           declaration =~ ~r/type:\s*:relaxed/,
           do: path

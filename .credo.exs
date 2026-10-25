@@ -1,5 +1,5 @@
-# This file contains the configuration for Credo. It was written by `mix tack.install`
-# and is yours to edit.
+# This file contains the configuration for Credo. It was written by `mix tack.install` for
+# Giggly and copied here, and is yours to edit.
 #
 # It is evaluated as Elixir (`Code.eval_string/1`), not read as a literal — which is what lets the
 # ex_slop check list below come from the package rather than a copy of it. A check's parameter may
@@ -26,6 +26,7 @@
         #
         included: [
           "lib/",
+          "dev/",
           "src/",
           "test/",
           "web/",
@@ -47,8 +48,8 @@
       # The repo-local checks, each one a rule this repo already states in prose (CLAUDE.md, a
       # `.claude/rules/*.md` file, a skill) made into a gate failure. They live outside `lib/`
       # deliberately: `lib/` compiles into the release, and a dev-only lint has no business there.
-      # The checks the harness ships (`Tack.Credo.Check.*`) come from the package and need
-      # no file here. See `.credo/checks/README.md`.
+      # The checks the harness ships (`Tack.Credo.Check.*`) are compiled from `dev/tack/`, Tack's
+      # code copied in, and need no file here. See `.credo/checks/README.md`.
       requires: [".credo/checks/"],
       #
       # If you want to enforce a style guide and need a more traditional linting

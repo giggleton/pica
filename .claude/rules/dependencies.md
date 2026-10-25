@@ -7,6 +7,7 @@ paths:
   - ".credo/checks/**"
   - ".claude/hooks/waiver-gate.sh"
   - ".github/workflows/**"
+  - "dev/**"
   - "native/pica/Cargo.toml"
   - "native/pica/Cargo.lock"
   - "native/pica/Cross.toml"
@@ -50,7 +51,8 @@ semver or the changelog).
   a time like any other check. Outside `lib/` deliberately: `lib/` compiles into the release, a
   dev-only lint has no business there, and a check under `lib/` would want a boundary declaration
   and count against `rules_check`'s uncovered-file budget. The checks the harness ships
-  (`Tack.Credo.Check.*`) come from the package instead and need no copy. Four things hold
+  (`Tack.Credo.Check.*`) are compiled from `dev/tack/` instead, with Tack's tests under
+  `test/tack/`. Four things hold
   a new local check together:
   **(1) A rule the `boundary` compiler already holds is not restated** — a web module naming
   `Repo`, a core module calling a context. Two homes for one rule is one home too many, and the
@@ -83,6 +85,12 @@ semver or the changelog).
 - **`boundary` is the one dev tool that is not `only: [:dev, :test]`**, and must stay that way: it
   is a compiler, so it has to exist wherever `mix compile` runs, including a `:prod` release
   build. Scoping it away from prod makes the release build fail on an unknown compiler.
+- **`dev/` is Tack's code, copied, and stays Tack's.** The gate's runner, the rules check, the
+  boundary scanner, the credo checks and their tests (`test/tack/`) are copies of Tack's
+  (`dev/tack.ex` names the commit), kept byte for byte, so a fix in Tack is copied across with a
+  diff and a Pica-only change is a decision to state in `dev/tack.ex`. They are copied rather than
+  depended on because Tack's repository is private and CI cannot fetch it. `dev/` compiles in the
+  dev and test environments only and is not in the Hex package.
 - **The Hex package `rustler` and the crate `rustler` move together, on the same minor.** The
   Hex side compiles the crate and the crate implements the NIF interface it loads, so a bump of
   one is a bump of both, through `dependency-updates`. `rustler` is `optional: true` in `mix.exs`:
@@ -179,8 +187,9 @@ semver or the changelog).
   hashing an approval, and passes a `defimpl`'s own `classify_to:`; `elixir-code-review` scopes
   its review against the local `main`; `docs-sync` routes a milestone to one §6 line and mechanism
   to module documentation. Giggly's mutation testing was left out: its `muex` dependency, its
-  skill, and the commit gate's mutation rule and `post-commit` hook. `tack` stays a dev
-  dependency for `mix tack.quality`, `mix tack.rules_check` and its credo checks.
+  skill, and the commit gate's mutation rule and `post-commit` hook. The code Pica runs from
+  Tack — `mix tack.quality`, `mix tack.rules_check`, the credo checks, the boundary scanner — is
+  copied into `dev/` (the rule above), so Tack is not a dependency.
 - The `elixir:` requirement in `mix.exs` is the floor; the **exact** toolchain is pinned in
   `.tool-versions`, which CI reads.
 - The gate's tools: `ex_doc`, `credo` (with the `jump_credo_checks` and `ex_slop` plugins and

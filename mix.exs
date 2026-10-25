@@ -56,7 +56,6 @@ defmodule Pica.MixProject do
       {:rustler, "~> 0.38.0", optional: true},
       {:nimble_options, "~> 1.1"},
       {:boundary, "~> 0.11", runtime: false},
-      {:tack, git: "git@github.com:srowley/tack.git", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:jump_credo_checks, "~> 0.6", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
@@ -68,8 +67,14 @@ defmodule Pica.MixProject do
     [quality: ["tack.quality"]]
   end
 
+  # `dev/` holds the gate's tooling, copied from Tack (`dev/tack.ex`): compiled for the dev and
+  # test environments, never for a user's build, and left out of the package.
   defp elixirc_paths(:test) do
-    ["lib", "test/support"]
+    ["lib", "dev", "test/support"]
+  end
+
+  defp elixirc_paths(:dev) do
+    ["lib", "dev"]
   end
 
   defp elixirc_paths(_environment) do
