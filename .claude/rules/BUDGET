@@ -1,0 +1,4 @@
+# Ratchets enforced by `mix tack.rules_check` (a `mix quality` step).
+# Each number may only go down without an explicit edit; `--tighten` lowers it to today's value.
+claude_md_lines 134
+uncovered_lib_files 0

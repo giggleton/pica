@@ -1,0 +1,3 @@
+# Passes the NIF version the release workflow builds for into cross's build containers.
+[build.env]
+passthrough = ["RUSTLER_NIF_VERSION"]

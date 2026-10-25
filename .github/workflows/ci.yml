@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # One version, read from .tool-versions so CI and a dev machine cannot drift apart: the
+      # exact toolchain is pinned in one place. `strict` takes the pinned patch, not the newest
+      # matching build.
+      - name: Set up Elixir / OTP
+        uses: erlef/setup-beam@v1
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      # Stable Rust, with the formatter and linter the gate runs. The crate's floor is its
+      # `rust-version`; CI builds with the newest stable so a new lint surfaces here first.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache the crate's build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/pica
+
+      - name: Cache deps and build
+        uses: actions/cache@v5
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('.tool-versions') }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ hashFiles('.tool-versions') }}-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      # The whole gate, from the one list in mix.exs (`quality_steps`) — so a step added there is
+      # picked up here with no second list to keep in sync. `--check` drops only the formatting
+      # *writes*: running them would make the trailing check steps check work they had just done.
+      # The crate is built from source, since the `-dev` version forces it.
+      - name: Quality gate
+        run: mix quality --check

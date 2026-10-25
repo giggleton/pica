@@ -1,0 +1,22 @@
+[package]
+name = "pica"
+version = "0.1.0"
+edition = "2024"
+# rustler 0.38 needs 1.91; harfrust and skrifa need 1.85.
+rust-version = "1.91"
+license = "MIT"
+publish = false
+
+[lib]
+name = "pica"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Kept on the same minor as the Hex package `rustler` in mix.exs.
+rustler = "0.38.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
