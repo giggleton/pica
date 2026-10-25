@@ -39,4 +39,28 @@ defmodule Pica.Native do
   # `{:error, reason}`, as `Pica.load_error/0` describes. Runs on a dirty scheduler.
   @spec load(binary(), non_neg_integer()) :: {:ok, {reference(), map()}} | {:error, term()}
   def load(_bytes, _index), do: :erlang.nif_error(:nif_not_loaded)
+
+  # The glyph measurements below answer `{:ok, list}`, or `{:error, reason}`, the reason being
+  # `{:malformed_glyph, glyph_id, detail}` for a glyph whose data does not read, or
+  # `{:unreadable_font, detail}`, which load's checks leave unexpected. They take glyph ids the
+  # caller has checked against the font's glyph count.
+
+  @doc false
+  # The glyph each character of `text`, valid UTF-8, maps to through the font's character map, 0
+  # for a character the font lacks.
+  @spec glyph_ids(reference(), String.t()) :: {:ok, [non_neg_integer()]} | {:error, term()}
+  def glyph_ids(_resource, _text), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  # Each glyph's advance width as the font's `hmtx` table gives it.
+  @spec nominal_advances(reference(), [non_neg_integer()]) ::
+          {:ok, [non_neg_integer()]} | {:error, term()}
+  def nominal_advances(_resource, _glyph_ids), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  # Each glyph's control box as `{x_min, y_min, x_max, y_max}`, or `:none` for a glyph with no
+  # outline.
+  @spec glyph_boxes(reference(), [non_neg_integer()]) ::
+          {:ok, [{integer(), integer(), integer(), integer()} | :none]} | {:error, term()}
+  def glyph_boxes(_resource, _glyph_ids), do: :erlang.nif_error(:nif_not_loaded)
 end

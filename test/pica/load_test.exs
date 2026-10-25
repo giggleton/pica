@@ -1,6 +1,8 @@
 defmodule Pica.LoadTest do
   use ExUnit.Case, async: true
 
+  alias PicaTest.TableDirectory
+
   @fonts "test/fonts"
 
   # Golden: test/fixtures/font_info.exs is fontTools' reading of every test font (its header names
@@ -57,6 +59,25 @@ defmodule Pica.LoadTest do
       # A TrueType table directory with no tables: version, table count, three search fields.
       empty_font = <<0x00010000::32, 0::16, 0::16, 0::16, 0::16>>
       assert Pica.load(empty_font) == {:error, {:missing_table, "head"}}
+    end
+
+    test "a font without advance widths is missing its hmtx table" do
+      font =
+        "Lato-Regular.ttf"
+        |> read_font()
+        |> TableDirectory.rename_table("hmtx", "hmty")
+
+      assert Pica.load(font) == {:error, {:missing_table, "hmtx"}}
+    end
+
+    test "glyf outlines without the loca table that indexes them are malformed" do
+      # The detail is prose for a person; only its presence is the contract.
+      font =
+        "Lato-Regular.ttf"
+        |> read_font()
+        |> TableDirectory.rename_table("loca", "locb")
+
+      assert match?({:error, {:malformed, detail}} when is_binary(detail), Pica.load(font))
     end
 
     test "WOFF and WOFF2 data that does not decode is malformed, with a detail to read" do

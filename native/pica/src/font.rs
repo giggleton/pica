@@ -1,23 +1,32 @@
 //! Loading a font: decoding its container, choosing the font in a collection, checking that the
-//! tables Pica reads are present and inside the data, and reading the font's information.
+//! tables Pica reads are present and inside the data and that its metrics and outlines read, and
+//! reading the font's information.
 
 use read_fonts::tables::name::Encoding;
 use read_fonts::types::{NameId, Tag};
 use read_fonts::{FileRef, FontRef, ReadError, TableProvider};
 use rustler::{NifMap, NifTaggedEnum, NifUnitEnum};
+use skrifa::OutlineGlyphCollection;
+use skrifa::outline::OutlineGlyphFormat;
 
-/// A loaded font: the decoded bytes of its file, and which font of the file it is.
+/// A loaded font: the decoded bytes of its file, which font of the file it is, and the table
+/// that draws its glyphs.
 pub struct FontResource {
     bytes: Vec<u8>,
     index: u32,
+    outlines: Outlines,
 }
 
 #[rustler::resource_impl]
 impl rustler::Resource for FontResource {}
 
 impl FontResource {
-    fn font(&self) -> Result<FontRef<'_>, ReadError> {
+    pub fn font(&self) -> Result<FontRef<'_>, ReadError> {
         FontRef::from_index(&self.bytes, self.index)
+    }
+
+    pub fn outlines(&self) -> Outlines {
+        self.outlines
     }
 }
 
@@ -31,7 +40,7 @@ pub enum Container {
 }
 
 /// The table that draws the font's glyphs.
-#[derive(NifUnitEnum)]
+#[derive(NifUnitEnum, Clone, Copy)]
 pub enum Outlines {
     Truetype,
     Cff,
@@ -86,8 +95,9 @@ impl From<ReadError> for LoadError {
     }
 }
 
-// The tables Pica reads to describe a font; a font without one of them does not load.
-const REQUIRED_TABLES: [&[u8; 4]; 4] = [b"head", b"hhea", b"maxp", b"name"];
+// The tables Pica reads to describe a font and measure its glyphs; a font without one of them
+// does not load.
+const REQUIRED_TABLES: [&[u8; 4]; 5] = [b"head", b"hhea", b"hmtx", b"maxp", b"name"];
 
 /// Loads the font at `index` from a file's bytes.
 pub fn load(bytes: &[u8], index: u64) -> Result<(FontResource, Info), LoadError> {
@@ -100,13 +110,19 @@ pub fn load(bytes: &[u8], index: u64) -> Result<(FontResource, Info), LoadError>
         .ok()
         .filter(|index| *index < font_count)
         .ok_or(LoadError::IndexOutOfRange(font_count))?;
+    let outlines = {
+        let font = FontRef::from_index(&decoded, index)?;
+        check_tables(&font)?;
+        let outlines = outlines(&font);
+        check_glyphs(&font, outlines)?;
+        outlines
+    };
     let resource = FontResource {
         bytes: decoded,
         index,
+        outlines,
     };
-    let font = resource.font()?;
-    check_tables(&font)?;
-    let info = read_info(&font, container, index, font_count)?;
+    let info = read_info(&resource.font()?, container, index, font_count, outlines)?;
     Ok((resource, info))
 }
 
@@ -155,6 +171,37 @@ fn check_tables(font: &FontRef) -> Result<(), LoadError> {
     }
 }
 
+// The glyph measurements read the advance widths and draw the outlines, so both must read: the
+// widths for as many glyphs as the font declares, and the outlines in the table `outlines` names.
+fn check_glyphs(font: &FontRef, outlines: Outlines) -> Result<(), LoadError> {
+    font.h_glyph_metric_records()?;
+    let table = match (outlines, outline_collection(font, outlines)) {
+        (Outlines::None, _) | (_, Some(_)) => return Ok(()),
+        (Outlines::Truetype, None) => "glyf",
+        (Outlines::Cff, None) => "CFF",
+        (Outlines::Cff2, None) => "CFF2",
+    };
+    Err(LoadError::Malformed(format!(
+        "the {table} outlines do not read"
+    )))
+}
+
+/// The font's outlines, read from the table `outlines` names; `None` for a font with no outlines.
+/// The format is named rather than left to skrifa, which would prefer an experimental `VARC`
+/// table that FreeType does not read.
+pub fn outline_collection<'a>(
+    font: &FontRef<'a>,
+    outlines: Outlines,
+) -> Option<OutlineGlyphCollection<'a>> {
+    let format = match outlines {
+        Outlines::Truetype => OutlineGlyphFormat::Glyf,
+        Outlines::Cff => OutlineGlyphFormat::Cff,
+        Outlines::Cff2 => OutlineGlyphFormat::Cff2,
+        Outlines::None => return None,
+    };
+    OutlineGlyphCollection::with_format(font, format)
+}
+
 fn has_table(font: &FontRef, tag: Tag) -> bool {
     font.table_directory()
         .table_records()
@@ -167,6 +214,7 @@ fn read_info(
     container: Container,
     index: u32,
     font_count: u32,
+    outlines: Outlines,
 ) -> Result<Info, LoadError> {
     let head = font.head()?;
     let hhea = font.hhea()?;
@@ -183,7 +231,7 @@ fn read_info(
         index,
         font_count,
         container,
-        outlines: outlines(font),
+        outlines,
         family: name(font, NameId::TYPOGRAPHIC_FAMILY_NAME)
             .or_else(|| name(font, NameId::FAMILY_NAME)),
         subfamily: name(font, NameId::TYPOGRAPHIC_SUBFAMILY_NAME)

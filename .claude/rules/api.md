@@ -34,6 +34,17 @@ paths:
   information is read once, at load, so `Pica.info/1` never fails and never calls the NIF.
 - **`info/1` reports the font's own numbers**: the `hhea` line metrics as the table gives them,
   the names as fontTools' `getDebugName` chooses them, and `:none` for a value the font lacks.
+- **Glyphs are measured by glyph id, at the font's default location.** `nominal_advances/2` and
+  `glyph_boxes/2` take ids, as shaping returns them; `glyph_ids/2` is the font's character map
+  alone, one id per code point, 0 for a character the font lacks, never a shaped result
+  (design-log §4, "Glyphs are measured by glyph id").
+- **A glyph's box is its outline's control box, never the box the font stores**: every point,
+  on and off the curve, as FreeType computes it unscaled, in whole font units. A glyph with no
+  outline has no box, `:none`, never zeros; what such a glyph measures is the caller's rule
+  (design-log §4, "A glyph's box is its outline's control box", "A glyph with no outline").
+- **A glyph id the font lacks raises `ArgumentError`** naming the font's last glyph id, checked
+  in Elixir against `glyph_count` before the NIF is called; so does a glyph whose data does not
+  read.
 - **The API raises on misuse.** Options are validated with NimbleOptions; a font Pica cannot read
   raises `ArgumentError` naming the problem where the function promises bytes it can read, and
   returns `{:error, reason}` where it promises to try.

@@ -24,6 +24,18 @@ defmodule Pica do
   `load/2` reads a font from its file's bytes, in any of the containers fonts ship in: a plain
   TrueType or OpenType font, a font collection (several fonts in one file, chosen by `:index`),
   WOFF or WOFF2. `info/1` reports what the font says about itself.
+
+  ## Glyphs
+
+  A font draws text with glyphs: shapes numbered by glyph id, from 0 to one less than the font's
+  `glyph_count`. Glyph 0 is `.notdef`, the shape a font draws for a character it lacks. The
+  font's character map ties each character to a glyph, which `glyph_ids/2` reads, though shaping
+  may then replace glyphs, joining "f" and "i" into one, say.
+
+  `nominal_advances/2` gives how far each glyph moves the pen on, as the font stores it, before
+  shaping adjusts it for kerning or context. `glyph_boxes/2` gives the box around each glyph's
+  outline. Both measure at the font's default location: a variable font, which can vary its
+  weight or width, is measured as it is drawn when no variation is chosen.
   """
 
   # The root boundary. It lists every outside library a sub-boundary does, since a sub-boundary
@@ -49,9 +61,10 @@ defmodule Pica do
     * `:truncated` — the data ends before a structure or a table it declares.
     * `{:index_out_of_range, font_count}` — the file has no font at the index asked for; it
       holds `font_count`.
-    * `{:missing_table, tag}` — a table Pica reads to describe a font is absent.
+    * `{:missing_table, tag}` — a table Pica reads to describe a font or measure its glyphs is
+      absent.
     * `{:malformed, detail}` — anything else that does not read, such as WOFF data that does not
-      decode.
+      decode, or advance widths or outlines that do not read.
   """
   @type load_error ::
           :unknown_format
@@ -100,6 +113,22 @@ defmodule Pica do
   @typedoc "A variable font's axis: its four-letter tag, such as `\"wght\"`, and its range."
   @type axis :: %{tag: String.t(), minimum: float(), default: float(), maximum: float()}
 
+  @typedoc """
+  A glyph's box, in font units: `{x_min, y_min, x_max, y_max}`, measured from the point where the
+  glyph is drawn, on the baseline, with y rising upward, so `y_min` is negative for a glyph that
+  descends below the baseline.
+
+  It is the glyph's control box: the box around every point of its outline, including the
+  off-curve points that steer its curves, computed from the outline rather than read from the box
+  a font may store. Points are in whole font units: a TrueType glyph built from a scaled copy of
+  another has each point rounded to the nearest unit, and a corner of a CFF glyph that falls
+  between units is rounded outward.
+  """
+  @type glyph_box :: {integer(), integer(), integer(), integer()}
+
+  defguardp is_glyph_id(glyph_id, glyph_count)
+            when is_integer(glyph_id) and glyph_id >= 0 and glyph_id < glyph_count
+
   @doc """
   Loads a font from the bytes of a font file.
 
@@ -141,4 +170,98 @@ defmodule Pica do
   """
   @spec info(Font.t()) :: info()
   def info(font), do: Font.info(font)
+
+  @doc """
+  The glyph each character of `text` maps to through the font's character map, one per character
+  (Unicode code point), with 0 for a character the font lacks.
+
+  This is the font's own mapping, before shaping: a ligature or a contextual form appears only
+  in what shaping returns. Raises `ArgumentError` for text that is not valid UTF-8.
+
+  ## Examples
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> Pica.glyph_ids(font, "AV M")
+      [3, 40, 2, 24]
+  """
+  @spec glyph_ids(Font.t(), String.t()) :: [non_neg_integer()]
+  def glyph_ids(font, text) when is_binary(text) do
+    unless String.valid?(text) do
+      raise ArgumentError, "expected text in UTF-8, got: #{inspect(text)}"
+    end
+
+    font
+    |> Font.resource()
+    |> Native.glyph_ids(text)
+    |> measured!()
+  end
+
+  @doc """
+  Each glyph's nominal advance, in font units: how far the glyph moves the pen on, as the font
+  stores it, before shaping adjusts it.
+
+  Raises `ArgumentError` for a glyph id the font does not have.
+
+  ## Examples
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> Pica.nominal_advances(font, Pica.glyph_ids(font, "AV M"))
+      [1354, 1354, 512, 1857]
+  """
+  @spec nominal_advances(Font.t(), [non_neg_integer()]) :: [non_neg_integer()]
+  def nominal_advances(font, glyph_ids) when is_list(glyph_ids) do
+    check_glyph_ids!(font, glyph_ids)
+
+    font
+    |> Font.resource()
+    |> Native.nominal_advances(glyph_ids)
+    |> measured!()
+  end
+
+  @doc """
+  Each glyph's box (see `t:glyph_box/0`), or `:none` for a glyph with no outline, such as a
+  space.
+
+  Raises `ArgumentError` for a glyph id the font does not have, or for a glyph whose outline
+  does not read.
+
+  ## Examples
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> Pica.glyph_boxes(font, Pica.glyph_ids(font, "M g"))
+      [{183, 0, 1674, 1433}, :none, {62, -365, 996, 1030}]
+  """
+  @spec glyph_boxes(Font.t(), [non_neg_integer()]) :: [glyph_box() | :none]
+  def glyph_boxes(font, glyph_ids) when is_list(glyph_ids) do
+    check_glyph_ids!(font, glyph_ids)
+
+    font
+    |> Font.resource()
+    |> Native.glyph_boxes(glyph_ids)
+    |> measured!()
+  end
+
+  defp check_glyph_ids!(font, glyph_ids) do
+    glyph_count = Font.info(font).glyph_count
+
+    case Enum.reject(glyph_ids, fn glyph_id -> is_glyph_id(glyph_id, glyph_count) end) do
+      [] ->
+        :ok
+
+      [not_a_glyph_id | _rest] ->
+        raise ArgumentError,
+              "expected glyph ids from 0 to #{glyph_count - 1}, the font's glyph count less " <>
+                "one, got: #{inspect(not_a_glyph_id)}"
+    end
+  end
+
+  defp measured!({:ok, values}), do: values
+
+  defp measured!({:error, {:malformed_glyph, glyph_id, detail}}) do
+    raise ArgumentError, "cannot measure glyph #{glyph_id}: #{detail}"
+  end
+
+  defp measured!({:error, {:unreadable_font, detail}}) do
+    raise ArgumentError, "cannot measure glyphs, since the font does not read: #{detail}"
+  end
 end

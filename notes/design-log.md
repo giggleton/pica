@@ -151,6 +151,33 @@ errors are an atom or a tagged tuple naming the problem: `:unknown_format`, `:tr
 `{:index_out_of_range, font_count}`, `{:missing_table, tag}`, `{:malformed, detail}`. Rejected: a
 single `format`, which cannot say both.
 
+**Glyphs are measured by glyph id** (Steve, 2026-10-25). `nominal_advances/2` and
+`glyph_boxes/2` take lists of glyph ids, as shaping returns them, so a caller measures the glyphs
+shaping produced, ligatures and alternates included; `glyph_ids/2` maps text through the
+character map alone, one id per code point, 0 for a character the font lacks, which is how
+FreeType picks the glyph R measures for "M". Rejected: taking a string, as the plan sketched
+(reaches only glyphs a character maps to, and cannot measure shaped output); one function
+taking either (a list of integers is also a charlist).
+
+**A glyph's box is its outline's control box** (Steve, 2026-10-25). Every glyph, in every outline
+format, is drawn through skrifa into a control-box pen: the box of every point, on and off the
+curve, which FreeType 2.14.3 computes (`ttgload.c`, `compute_glyph_metrics`) and R measures. The
+box a `glyf` glyph stores is ignored; in the test fonts five disagree with their points. skrifa,
+like FreeType unscaled, rounds each point of a scaled composite component to a whole unit, and
+Pica keeps that; a CFF corner between units is rounded outward. Rejected: the stored `glyf` box
+(fast, but not what FreeType reports); exact composite points rounded outward (needs a second
+outline reader beside skrifa, and is still integers).
+
+**A glyph with no outline has no box: `:none`** (Steve, 2026-10-25). A space has no points, and
+fontTools agrees. A caller copying R, where FreeType reports zeros, maps `:none` to zeros itself.
+Rejected: `{0, 0, 0, 0}` — it claims ink at the origin, so the leftmost ink of " A" would be 0.
+
+**A glyph id the font lacks raises `ArgumentError`** (Steve, 2026-10-25). Ids come from the same
+font, so one past `glyph_count` means fonts were mixed up: a programmer error, raised by the
+public API as misuse is. Rejected: `:none` in its place (holes in a plausible list, and `:none`
+meaning two things in `glyph_boxes/2`); `{:error, reason}` for the call (every measurement
+unwrapped for a case only a bug produces).
+
 **The harness is Giggly's, copied, without mutation testing** (Steve, 2026-10-24). Pica takes
 Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet have
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
@@ -178,6 +205,9 @@ SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-25 — Measure each glyph's advance and box, and map characters to glyphs; §4: "Glyphs
+  are measured by glyph id", "A glyph's box is its outline's control box", "A glyph with no
+  outline has no box", "A glyph id the font lacks raises"
 - 2026-10-24 — Load fonts from every container and report what each says about itself; §4: "0.1.0
   reads font collections", "`info/1` keeps a font's container and its outlines apart"
 - 2026-10-24 — Copy Tack's gate tooling into dev/ so CI needs no private repository; §4: "Tack's

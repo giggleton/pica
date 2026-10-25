@@ -34,6 +34,11 @@ defmodule Pica.Font do
   @spec info(t()) :: Pica.info()
   def info(%__MODULE__{info: info}), do: info
 
+  @doc false
+  # The native resource holding the font, for the NIF calls in `Pica`.
+  @spec resource(t()) :: reference()
+  def resource(%__MODULE__{resource: resource}), do: resource
+
   defp none_if_nil(nil), do: :none
   defp none_if_nil(value), do: value
 end

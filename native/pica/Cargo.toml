@@ -17,6 +17,8 @@ crate-type = ["cdylib"]
 rustler = "0.38.0"
 # Font tables, read straight from the bytes (Google Fonts' fontations); harfrust builds on 0.46.
 read-fonts = "0.46.0"
+# Glyph metrics, the character map and outlines, on the same read-fonts.
+skrifa = "0.49.0"
 # WOFF and WOFF2 decoding to a plain font; its default features bring brotli and zlib.
 wuff = "0.2.9"
 
