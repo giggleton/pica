@@ -38,8 +38,8 @@ moves into §4, with its rejected alternatives, as each decision is ratified.
 ## 3. Module map
 
 `Pica` is the public API and the root boundary; `Pica.Font` is the opaque struct a loaded font comes
-back in; `Pica.Native` holds the NIF stubs. `mix
-boundary.spec` prints the current graph.
+back in; `Pica.Glyph` is a shaped glyph; `Pica.ShapeOptions` checks shaping's options;
+`Pica.Native` holds the NIF stubs. `mix boundary.spec` prints the current graph.
 
 ## 4. Key design decisions (the "why", so we don't relitigate)
 
@@ -178,6 +178,39 @@ public API as misuse is. Rejected: `:none` in its place (holes in a plausible li
 meaning two things in `glyph_boxes/2`); `{:error, reason}` for the call (every measurement
 unwrapped for a case only a bug produces).
 
+**`shape/3` shapes one string** (Steve, 2026-10-25). `shape(font, text, options)` returns one
+string's glyphs, as `glyph_ids/2` takes one string, with one result type, and options such as a
+feature apply to that string alone. harfrust keeps a font's prepared layout tables on the font,
+so a call does little beyond the shaping itself: measured, 10 to 15 µs a label. Rejected: a list
+of strings, as the plan sketched (one trip into Rust per batch, saving about a microsecond a
+string, with every option applying to every string); either, by type (two return shapes behind
+one name). A batch function can be added beside it if step 9's benchmarks call for one.
+
+**Each shaped glyph is a `%Pica.Glyph{}`** (Steve, 2026-10-25). Its fields, `glyph_id`,
+`cluster`, `x_advance`, `nominal_advance`, `x_offset` and `y_offset`, are named, so two advances
+cannot be swapped by position, a misspelt field fails to compile, and a field can be added (a
+`y_advance` for vertical text) without breaking a caller. Rust builds the struct. It costs a map
+per glyph, an estimated 0.1 to 0.2 µs, small for one label's glyphs; the NIF rule that measures
+cross as tuples was written when `shape` was to take a list of strings. Rejected: a six-tuple
+(cheapest, and as `glyph_boxes/2` returns, but positional); a plain map (named, with no type).
+
+**Clusters count characters** (Steve, 2026-10-25). A glyph's cluster is the index, from 0, of the
+first code point of the characters it came from, as `glyph_ids/2` counts and as hb-shape reports
+by default; harfrust's buffer is filled a code point at a time to give it. Rejected: UTF-8 byte
+offsets (harfrust's own unit, and what `binary_part/3` takes, but no other Pica function counts
+bytes).
+
+**Shaping's options take HarfBuzz's forms** (Steve, 2026-10-25). `features:` is a keyword list
+of four-character tags and `true`, `false` or a number, for the whole text; `direction:` is
+`:left_to_right` or `:right_to_left`; `script:` a four-letter ISO 15924 code in any case;
+`language:` a BCP 47 tag. Left out, direction and script are guessed from the text and the
+language is none, never the machine's locale. A value not of its form raises; one of the right
+form passes whether or not the font or Unicode knows it, as in HarfBuzz. Rejected: HarfBuzz's
+feature strings (`"-kern"`, ranges, but checked only as strings); feature ranges now (addable
+later as a `{value, range}` value); vertical directions (they need `y_advance`, and a rotated
+label is horizontal text); a strict list of scripts (Pica would keep ISO 15924 current); script
+names as atoms; English as the default language.
+
 **The harness is Giggly's, copied, without mutation testing** (Steve, 2026-10-24). Pica takes
 Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet have
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
@@ -194,7 +227,8 @@ CI deploy key for Tack (CI would pass, but a contributor still could not run the
 ## 5. Testing approach
 
 Expected values come from outside tools, never from Pica's own output: fontTools in
-`python:3.12-slim`, `hb-shape` from Debian's `libharfbuzz-bin`, and R for svglite's widths. Each
+`python:3.12-slim`, `hb-shape` from Debian's `libharfbuzz-bin` (installed in that image, so a
+generator can decode a WOFF with fontTools before shaping it), and R for svglite's widths. Each
 generator script lives under `test/support/ground_truth/` with its Docker command in its header,
 and its output under `test/fixtures/` as Elixir terms. Test fonts are full original files under
 `test/fonts/`, each with its licence and a `FONTS.md` entry naming its source, version and
@@ -205,6 +239,9 @@ SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-25 — Shape text through harfrust, with HarfBuzz's defaults and per-call options; §4:
+  "`shape/3` shapes one string", "Each shaped glyph is a `%Pica.Glyph{}`", "Clusters count
+  characters", "Shaping's options take HarfBuzz's forms"
 - 2026-10-25 — Measure each glyph's advance and box, and map characters to glyphs; §4: "Glyphs
   are measured by glyph id", "A glyph's box is its outline's control box", "A glyph with no
   outline has no box", "A glyph id the font lacks raises"
@@ -217,5 +254,6 @@ One line per milestone, newest first: the date, the commit's subject as its titl
 
 ## 7. Deferred / open questions
 
-Open: CI on macOS (`erlef/setup-beam` runs on Linux and Windows only); whether 0.1.0 reads
-font collections; variable fonts beyond the default instance (recommended after 0.1.0).
+Open: CI on macOS (`erlef/setup-beam` runs on Linux and Windows only); variable fonts beyond the
+default instance (recommended after 0.1.0); a batch shaping function, if step 9's benchmarks
+call for one.

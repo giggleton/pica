@@ -2,19 +2,28 @@
 //! tables Pica reads are present and inside the data and that its metrics and outlines read, and
 //! reading the font's information.
 
+use read_fonts::model::Blob;
 use read_fonts::tables::name::Encoding;
 use read_fonts::types::{NameId, Tag};
 use read_fonts::{FileRef, FontRef, ReadError, TableProvider};
 use rustler::{NifMap, NifTaggedEnum, NifUnitEnum};
 use skrifa::OutlineGlyphCollection;
 use skrifa::outline::OutlineGlyphFormat;
+use std::panic::AssertUnwindSafe;
+use std::sync::Arc;
 
-/// A loaded font: the decoded bytes of its file, which font of the file it is, and the table
-/// that draws its glyphs.
+/// A loaded font: the decoded bytes of its file, which font of the file it is, the table that
+/// draws its glyphs, and the font as harfrust shapes with it, which shares the bytes and keeps
+/// the layout tables harfrust prepares on first use, so later calls reuse them.
 pub struct FontResource {
-    bytes: Vec<u8>,
+    bytes: Arc<Vec<u8>>,
     index: u32,
     outlines: Outlines,
+    // Rustler catches a panic at every NIF, so what a NIF returns must be unwind-safe, and
+    // harfrust's font is not marked so: it keeps its caches as type-erased boxes. Each is a
+    // `OnceLock` filled once, whole, which a panic in its initializer leaves empty, never
+    // half-written; asserting unwind safety claims no more than that.
+    shaping_font: AssertUnwindSafe<harfrust::Font>,
 }
 
 #[rustler::resource_impl]
@@ -27,6 +36,10 @@ impl FontResource {
 
     pub fn outlines(&self) -> Outlines {
         self.outlines
+    }
+
+    pub fn shaping_font(&self) -> &harfrust::Font {
+        &self.shaping_font.0
     }
 }
 
@@ -117,10 +130,15 @@ pub fn load(bytes: &[u8], index: u64) -> Result<(FontResource, Info), LoadError>
         check_glyphs(&font, outlines)?;
         outlines
     };
+    let bytes = Arc::new(decoded);
+    let shared_bytes: Arc<dyn AsRef<[u8]> + Send + Sync> = bytes.clone();
+    let shaping_font = harfrust::Font::new(Blob::from(shared_bytes), index)
+        .ok_or_else(|| LoadError::Malformed("harfrust does not read the font".to_string()))?;
     let resource = FontResource {
-        bytes: decoded,
+        bytes,
         index,
         outlines,
+        shaping_font: AssertUnwindSafe(shaping_font),
     };
     let info = read_info(&resource.font()?, container, index, font_count, outlines)?;
     Ok((resource, info))

@@ -36,6 +36,23 @@ defmodule Pica do
   shaping adjusts it for kerning or context. `glyph_boxes/2` gives the box around each glyph's
   outline. Both measure at the font's default location: a variable font, which can vary its
   weight or width, is measured as it is drawn when no variation is chosen.
+
+  ## Shaping
+
+  `shape/3` turns text into the glyphs a font draws it with, each positioned: a `Pica.Glyph`
+  per glyph, saying which glyph, which characters it came from, and how far it moves the pen on.
+  Shaping applies the font's rules through HarfBuzz, the standard shaping engine, in its Rust
+  port, harfrust: kerning, which moves particular pairs of letters closer or apart, as in "AV";
+  ligatures, one glyph standing for several characters, as in "fi"; letters whose form depends on
+  their neighbours, as in Arabic; and accents placed over their letters.
+
+  A font's rules are grouped into OpenType features, each named by a four-letter tag: `kern` for
+  kerning, `liga` for the standard ligatures, `smcp` for small capitals. HarfBuzz turns on a
+  default set for the text's script, its writing system, such as Latin or Arabic, and the
+  `:features` option turns features on or off over it. The script and the direction the text runs
+  in are guessed from the text unless given; a language, which picks a font's forms for one
+  language, such as Turkish, is used only when given. Shaping is done at the font's default
+  location, in font units.
   """
 
   # The root boundary. It lists every outside library a sub-boundary does, since a sub-boundary
@@ -44,7 +61,7 @@ defmodule Pica do
     deps: [NimbleOptions, {Mix, :compile}, {Rustler, :compile}, {RustlerPrecompiled, :compile}],
     exports: []
 
-  alias Pica.{Font, Native}
+  alias Pica.{Font, Glyph, Native}
 
   @load_options NimbleOptions.new!(
                   index: [
@@ -126,6 +143,47 @@ defmodule Pica do
   """
   @type glyph_box :: {integer(), integer(), integer(), integer()}
 
+  @shape_options NimbleOptions.new!(
+                   features: [
+                     type: {:custom, Pica.ShapeOptions, :features, []},
+                     default: [],
+                     type_doc: "`t:keyword/0`",
+                     doc: """
+                     OpenType features to turn on or off over HarfBuzz's defaults, for the whole
+                     text, as a keyword list of each feature's four-character tag and its value:
+                     `true` or `false`, or a number, for a feature that chooses among alternate
+                     glyphs. A feature the font does not have does nothing. For example
+                     `[kern: false, liga: false, smcp: true]`.
+                     """
+                   ],
+                   direction: [
+                     type: {:in, [:left_to_right, :right_to_left]},
+                     doc: """
+                     The direction the text runs in. Guessed from the script when not given, and
+                     left to right for text with no script, such as digits.
+                     """
+                   ],
+                   script: [
+                     type: {:custom, Pica.ShapeOptions, :script, []},
+                     type_doc: "`t:String.t/0`",
+                     doc: """
+                     The text's script, as its four-letter ISO 15924 code in any case, such as
+                     `"Latn"`, `"Arab"` or `"Hebr"`. Guessed from the first character that
+                     belongs to a script when not given. A code HarfBuzz does not know shapes as
+                     a script with no rules of its own.
+                     """
+                   ],
+                   language: [
+                     type: {:custom, Pica.ShapeOptions, :language, []},
+                     type_doc: "`t:String.t/0`",
+                     doc: """
+                     The text's language, as a BCP 47 tag, such as `"tr"` or `"sr-Cyrl"`, which
+                     picks the font's forms for that language where it has them. None when not
+                     given, so the font's default forms apply.
+                     """
+                   ]
+                 )
+
   defguardp is_glyph_id(glyph_id, glyph_count)
             when is_integer(glyph_id) and glyph_id >= 0 and glyph_id < glyph_count
 
@@ -186,9 +244,7 @@ defmodule Pica do
   """
   @spec glyph_ids(Font.t(), String.t()) :: [non_neg_integer()]
   def glyph_ids(font, text) when is_binary(text) do
-    unless String.valid?(text) do
-      raise ArgumentError, "expected text in UTF-8, got: #{inspect(text)}"
-    end
+    check_text!(text)
 
     font
     |> Font.resource()
@@ -241,6 +297,65 @@ defmodule Pica do
     |> measured!()
   end
 
+  @doc """
+  Shapes `text` into the glyphs `font` draws it with (see `Pica.Glyph`), in the order they are
+  drawn, from left to right, with every length in font units.
+
+  HarfBuzz's default features for the text's script are on, and its direction and script are
+  guessed from the text; the options override them. A character the font lacks shapes to glyph
+  0, `.notdef`, with its cluster. Raises `ArgumentError` for text that is not valid UTF-8, and
+  `NimbleOptions.ValidationError` for an option not of its form.
+
+  ## Options
+
+  #{NimbleOptions.docs(@shape_options)}
+
+  ## Examples
+
+  Kerning moves "V" closer to "A", so "A" advances less than the font stores:
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> Pica.shape(font, "AV")
+      [
+        %Pica.Glyph{glyph_id: 3, cluster: 0, x_advance: 1246, nominal_advance: 1354, x_offset: 0, y_offset: 0},
+        %Pica.Glyph{glyph_id: 40, cluster: 1, x_advance: 1354, nominal_advance: 1354, x_offset: 0, y_offset: 0}
+      ]
+
+  In "office", one glyph draws "ffi", so the next cluster is 4:
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> font |> Pica.shape("office") |> Enum.map(fn glyph -> {glyph.glyph_id, glyph.cluster} end)
+      [{111, 0}, {76, 1}, {49, 4}, {59, 5}]
+
+  Without kerning, "A" advances as the font stores it:
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> font |> Pica.shape("AV", features: [kern: false]) |> Enum.map(fn glyph -> glyph.x_advance end)
+      [1354, 1354]
+  """
+  @spec shape(Font.t(), String.t(), keyword()) :: [Glyph.t()]
+  def shape(font, text, options \\ []) when is_binary(text) do
+    check_text!(text)
+    options = NimbleOptions.validate!(options, @shape_options)
+
+    font
+    |> Font.resource()
+    |> Native.shape(
+      text,
+      options[:features],
+      options[:direction],
+      options[:script],
+      options[:language]
+    )
+    |> shaped!()
+  end
+
+  defp check_text!(text) do
+    unless String.valid?(text) do
+      raise ArgumentError, "expected text in UTF-8, got: #{inspect(text)}"
+    end
+  end
+
   defp check_glyph_ids!(font, glyph_ids) do
     glyph_count = Font.info(font).glyph_count
 
@@ -253,6 +368,12 @@ defmodule Pica do
               "expected glyph ids from 0 to #{glyph_count - 1}, the font's glyph count less " <>
                 "one, got: #{inspect(not_a_glyph_id)}"
     end
+  end
+
+  defp shaped!({:ok, glyphs}), do: glyphs
+
+  defp shaped!({:error, {reason, detail}}) do
+    raise ArgumentError, "cannot shape the text (#{reason}): #{detail}"
   end
 
   defp measured!({:ok, values}), do: values

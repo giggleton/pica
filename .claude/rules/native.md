@@ -23,10 +23,15 @@ paths:
   copies the bytes it keeps, once, at load.
 - **Long work runs on a dirty scheduler.** `load` decodes and parses, which can take milliseconds,
   so it is `#[rustler::nif(schedule = "DirtyCpu")]`. A NIF stays on a normal scheduler only when
-  measurement shows its typical call well under a millisecond, as the glyph measurements' does
-  (the numbers are beside them in `lib.rs`); re-measure when one starts doing more per glyph.
-- **Batches cross the boundary as tuples and lists, not maps.** A caller measures many strings in
-  one call, and every map key is built and read per glyph.
+  measurement shows its typical call well under a millisecond, as the glyph measurements' and
+  shaping's do (the numbers are beside them in `lib.rs`); re-measure when one starts doing more per glyph.
+- **Measures cross the boundary as lists of tuples, or of structs the user chose.** A map's
+  keys are built per glyph, so a measure is a tuple (a glyph's box) unless the user has decided
+  its fields are too easy to confuse positionally, as for a shaped glyph, which Rust builds as a
+  `%Pica.Glyph{}` (`NifStruct`; design-log §4, "Each shaped glyph is a `%Pica.Glyph{}`").
+- **harfrust shapes with the resource's own `harfrust::Font`**, built at load over the same
+  bytes, shared rather than copied, so the layout tables harfrust prepares on a font's first
+  shaping are kept and reused by every later call; a font harfrust cannot read does not load.
 - **No Elixir font parser.** Anything read from a font is read in Rust, through the fontations
   crates and harfrust; the Elixir side wraps, validates options, and names errors.
 - **Each stub in `Pica.Native` matches a NIF in `native/pica/src` by name and arity**, and raises

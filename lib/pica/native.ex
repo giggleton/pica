@@ -63,4 +63,21 @@ defmodule Pica.Native do
   @spec glyph_boxes(reference(), [non_neg_integer()]) ::
           {:ok, [{integer(), integer(), integer(), integer()} | :none]} | {:error, term()}
   def glyph_boxes(_resource, _glyph_ids), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  # Shapes `text`, valid UTF-8, into `%Pica.Glyph{}` structs, applying `features` (`{tag, value}`,
+  # the tag four bytes) to the whole text, with the direction, script and language given, or
+  # guessed (direction, script) or left unset (language) where `nil`. Answers `{:ok, glyphs}`, or
+  # `{:error, reason}` for what the caller's checks and harfrust's leave unexpected:
+  # `{:invalid_setting, detail}` or `{:shaping_failed, detail}`.
+  @spec shape(
+          reference(),
+          String.t(),
+          [{String.t(), non_neg_integer()}],
+          :left_to_right | :right_to_left | nil,
+          String.t() | nil,
+          String.t() | nil
+        ) :: {:ok, [Pica.Glyph.t()]} | {:error, term()}
+  def shape(_resource, _text, _features, _direction, _script, _language),
+    do: :erlang.nif_error(:nif_not_loaded)
 end

@@ -19,6 +19,8 @@ rustler = "0.38.0"
 read-fonts = "0.46.0"
 # Glyph metrics, the character map and outlines, on the same read-fonts.
 skrifa = "0.49.0"
+# HarfBuzz's shaping, ported to Rust by the HarfBuzz project, on read-fonts 0.46.
+harfrust = "0.15.0"
 # WOFF and WOFF2 decoding to a plain font; its default features bring brotli and zlib.
 wuff = "0.2.9"
 

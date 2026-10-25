@@ -2,6 +2,8 @@
 paths:
   - "lib/pica.ex"
   - "lib/pica/font.ex"
+  - "lib/pica/glyph.ex"
+  - "lib/pica/shape_options.ex"
 ---
 
 # The public API (`Pica`)
@@ -29,7 +31,18 @@ paths:
   floats it computed itself; scaling and rounding happen inside shaping, per glyph, as HarfBuzz
   does them.
 - **Shaping defaults are HarfBuzz's.** The features HarfBuzz enables for the script are on, and
-  direction and script are guessed from the text, unless a call overrides them.
+  direction and script are guessed from the text, unless a call overrides them. The language is
+  none unless a call gives one: Pica never reads the machine's locale, as C HarfBuzz does.
+- **`shape/3` shapes one string into `%Pica.Glyph{}`s, in the order they are drawn**, left to
+  right on the page for right-to-left text too, each cluster the index of a code point counting
+  from 0, as hb-shape's are (design-log §4, "`shape/3` shapes one string", "Each shaped glyph is
+  a `%Pica.Glyph{}`", "Clusters count characters").
+- **Shaping's options are checked for their form, never their meaning.** A feature tag that is
+  not four printable ASCII characters, a feature value that is not a boolean or a 32-bit natural
+  number, a vertical or unknown direction, a script that is not four letters, or a language tag
+  of anything but letters, digits, `-` and `_` raises `NimbleOptions.ValidationError`; a value of
+  the right form passes whether or not the font or Unicode knows it, and does what HarfBuzz does
+  with it (design-log §4, "Shaping's options take HarfBuzz's forms").
 - **A loaded font is a `Pica.Font`, read through Pica's functions.** The struct is opaque; its
   information is read once, at load, so `Pica.info/1` never fails and never calls the NIF.
 - **`info/1` reports the font's own numbers**: the `hhea` line metrics as the table gives them,

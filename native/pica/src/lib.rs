@@ -5,10 +5,12 @@
 
 mod font;
 mod glyphs;
+mod shaping;
 
 use font::{FontResource, Info, LoadError};
 use glyphs::{GlyphBox, GlyphError};
 use rustler::{Binary, ResourceArc};
+use shaping::{Direction, Glyph, Settings, ShapingError};
 
 /// The crate's own version, so a caller can see which build of the NIF is loaded.
 #[rustler::nif]
@@ -49,6 +51,30 @@ fn glyph_boxes(
     glyph_ids: Vec<u32>,
 ) -> Result<Vec<GlyphBox>, GlyphError> {
     glyphs::glyph_boxes(&resource, &glyph_ids)
+}
+
+// Shaping stays on a normal scheduler too: measured on Lato, Source Serif 4 and Roboto, a label
+// of a few words takes 10 to 15 microseconds. A font's first shaping prepares harfrust's layout
+// tables, and loading plus that first call stayed under 700 microseconds.
+
+/// Shapes `text` into glyphs with the caller's features, and its direction, script and language
+/// where given (`nil` leaves each to harfrust).
+#[rustler::nif]
+fn shape(
+    resource: ResourceArc<FontResource>,
+    text: &str,
+    features: Vec<(String, u32)>,
+    direction: Option<Direction>,
+    script: Option<String>,
+    language: Option<String>,
+) -> Result<Vec<Glyph>, ShapingError> {
+    let settings = Settings {
+        features,
+        direction,
+        script,
+        language,
+    };
+    shaping::shape(&resource, text, settings)
 }
 
 rustler::init!("Elixir.Pica.Native");
