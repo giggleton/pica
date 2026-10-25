@@ -37,7 +37,8 @@ moves into §4, with its rejected alternatives, as each decision is ratified.
 
 ## 3. Module map
 
-`Pica` is the public API and the root boundary; `Pica.Native` holds the NIF stubs. `mix
+`Pica` is the public API and the root boundary; `Pica.Font` is the opaque struct a loaded font comes
+back in; `Pica.Native` holds the NIF stubs. `mix
 boundary.spec` prints the current graph.
 
 ## 4. Key design decisions (the "why", so we don't relitigate)
@@ -135,6 +136,21 @@ returns. Rejected: an R mode in Pica — R-specific behaviour in a general packa
 **The name is Pica; the licence is MIT** (Steve, 2026-10-24). A pica is a printer's measure, and
 the creature can live in Giggleton.
 
+**0.1.0 reads font collections** (Steve, 2026-10-24). `load(bytes, index: n)` picks a font from
+a `.ttc` or `.otc` file, and an index past the end is `{:index_out_of_range, font_count}`. Since
+installed fonts are a fallback in 0.1.0, collections matter: macOS ships Helvetica and Avenir as
+collections, Noto its CJK fonts. read-fonts reads them natively, and the test collection is built
+from Roboto, whose licence reserves no name. Rejected: leaving collections out of 0.1.0, which
+would make the fallback find installed fonts it could not open.
+
+**`info/1` keeps a font's container and its outlines apart** (2026-10-24). Where the plan had one
+`format`, `info/1` reports `container` (`:sfnt`, `:collection`, `:woff`, `:woff2`: what the bytes
+were) and `outlines` (`:truetype`, `:cff`, `:cff2`, `:none`: what draws the glyphs), since a WOFF2
+can wrap either outline format; and `axes` in place of a `variable` flag, which they imply. Load
+errors are an atom or a tagged tuple naming the problem: `:unknown_format`, `:truncated`,
+`{:index_out_of_range, font_count}`, `{:missing_table, tag}`, `{:malformed, detail}`. Rejected: a
+single `format`, which cannot say both.
+
 **The harness is Giggly's, copied, without mutation testing** (Steve, 2026-10-24). Pica takes
 Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet have
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
@@ -162,6 +178,8 @@ SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-24 — Load fonts from every container and report what each says about itself; §4: "0.1.0
+  reads font collections", "`info/1` keeps a font's container and its outlines apart"
 - 2026-10-24 — Copy Tack's gate tooling into dev/ so CI needs no private repository; §4: "Tack's
   code is copied into `dev/`"
 - 2026-10-24 — Start Pica: a NIF skeleton built from source, Giggly's harness, and the plan's

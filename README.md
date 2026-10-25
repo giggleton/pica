@@ -8,7 +8,7 @@ and face, for each string's glyphs: which glyph, which characters it came from, 
 advances with kerning, ligatures and contextual forms applied. It also reports font-wide metrics
 and glyph bounding boxes. Nothing is drawn.
 
-**Status:** in development; the API is not built yet.
+**Status:** in development. Loading fonts works; shaping, metrics and the registry are to come.
 
 ## Building from source
 

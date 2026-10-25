@@ -32,4 +32,11 @@ defmodule Pica.Native do
   # The Rust crate's version, so a test can show that the NIF loaded.
   @spec crate_version() :: String.t()
   def crate_version, do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  # Loads the font at `index` from a font file's bytes: `{:ok, {resource, info}}`, with `info` as
+  # `Pica.info/1` describes it but for absent values, which arrive as `nil`; or
+  # `{:error, reason}`, as `Pica.load_error/0` describes. Runs on a dirty scheduler.
+  @spec load(binary(), non_neg_integer()) :: {:ok, {reference(), map()}} | {:error, term()}
+  def load(_bytes, _index), do: :erlang.nif_error(:nif_not_loaded)
 end

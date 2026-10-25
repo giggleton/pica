@@ -1,6 +1,7 @@
 ---
 paths:
   - "lib/pica.ex"
+  - "lib/pica/font.ex"
 ---
 
 # The public API (`Pica`)
@@ -29,6 +30,10 @@ paths:
   does them.
 - **Shaping defaults are HarfBuzz's.** The features HarfBuzz enables for the script are on, and
   direction and script are guessed from the text, unless a call overrides them.
+- **A loaded font is a `Pica.Font`, read through Pica's functions.** The struct is opaque; its
+  information is read once, at load, so `Pica.info/1` never fails and never calls the NIF.
+- **`info/1` reports the font's own numbers**: the `hhea` line metrics as the table gives them,
+  the names as fontTools' `getDebugName` chooses them, and `:none` for a value the font lacks.
 - **The API raises on misuse.** Options are validated with NimbleOptions; a font Pica cannot read
   raises `ArgumentError` naming the problem where the function promises bytes it can read, and
   returns `{:error, reason}` where it promises to try.

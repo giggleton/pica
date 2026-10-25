@@ -35,6 +35,8 @@ defmodule Pica.MixProject do
       ],
       aliases: aliases(),
       elixirc_paths: elixirc_paths(Mix.env()),
+      # Expected values the tests read, written as Elixir terms; not test files.
+      test_ignore_filters: [~r"^test/fixtures/"],
       description: "Text shaping and font metrics for Elixir, through HarfBuzz's Rust port.",
       package: package(),
       docs: docs(),

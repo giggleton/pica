@@ -11,6 +11,10 @@ paths:
 - **Never panic on font data.** No `unwrap`, `expect`, indexing or arithmetic that can panic on
   anything read from a font or passed in by a caller; every failure maps to `{:error, reason}`.
   Rustler turns a panic into a raise, but a panic here is a bug, not an error path.
+- **Load checks everything Pica will read, so nothing after it fails on the font's structure.**
+  The table directory must hold every record it declares and every table must lie inside the
+  data (read-fonts reads as many records as fit, so a cut-off file would otherwise look like one
+  missing its tables), and the tables Pica reads must be present.
 - **The font resource owns its bytes.** A NIF `Binary` is valid only for the call, so a resource
   copies the bytes it keeps, once, at load.
 - **Long work runs on a dirty scheduler.** `load` decodes and parses, which can take milliseconds,
