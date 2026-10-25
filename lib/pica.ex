@@ -52,7 +52,19 @@ defmodule Pica do
   `:features` option turns features on or off over it. The script and the direction the text runs
   in are guessed from the text unless given; a language, which picks a font's forms for one
   language, such as Turkish, is used only when given. Shaping is done at the font's default
-  location, in font units.
+  location, in font units unless a `:scale` is given.
+
+  ## Scale
+
+  Font units depend on no size, but turning them into a size rounds them, and where the rounding
+  happens changes the total. With `:scale`, shaping itself positions each glyph at the scale and
+  rounds it as HarfBuzz does, so a sum of advances is the one a HarfBuzz-based renderer gets at
+  that size. A scale is the em divided into that many units: at 12 points, `scale: 12 * 64` puts
+  every length in 1/64 point.
+
+  The rounding is HarfBuzz's own. A renderer whose HarfBuzz takes each glyph's advance from
+  FreeType instead rounds by FreeType's arithmetic, so its advances can differ from Pica's by a
+  unit on some glyphs; Pica does not imitate it.
   """
 
   # The root boundary. It lists every outside library a sub-boundary does, since a sub-boundary
@@ -181,6 +193,16 @@ defmodule Pica do
                      picks the font's forms for that language where it has them. None when not
                      given, so the font's default forms apply.
                      """
+                   ],
+                   scale: [
+                     type: {:in, 1..2_147_483_647},
+                     type_doc: "`t:pos_integer/0`",
+                     doc: """
+                     How many units the em, the font size, is divided into, in place of the
+                     font's own units per em: every advance and offset comes back in these units,
+                     each glyph's rounded to a whole unit as HarfBuzz rounds it. At 12 points,
+                     `scale: 12 * 64` gives 1/64 point. Font units when not given.
+                     """
                    ]
                  )
 
@@ -299,7 +321,7 @@ defmodule Pica do
 
   @doc """
   Shapes `text` into the glyphs `font` draws it with (see `Pica.Glyph`), in the order they are
-  drawn, from left to right, with every length in font units.
+  drawn, from left to right, with every length in font units, or at the `:scale` given.
 
   HarfBuzz's default features for the text's script are on, and its direction and script are
   guessed from the text; the options override them. A character the font lacks shapes to glyph
@@ -342,6 +364,12 @@ defmodule Pica do
       iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
       iex> font |> Pica.shape("AV", features: [kern: false]) |> Enum.map(fn glyph -> glyph.x_advance end)
       [1354, 1354]
+
+  At 12 points in 1/64 point, "AV" is 999/64 point wide, each glyph rounded as HarfBuzz rounds it:
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> font |> Pica.shape("AV", scale: 12 * 64) |> Enum.map(fn glyph -> glyph.x_advance end)
+      [479, 520]
   """
   @spec shape(Font.t(), String.t(), keyword()) :: [Glyph.t()]
   def shape(font, text, options \\ []) when is_binary(text) do
@@ -355,7 +383,8 @@ defmodule Pica do
       options[:features],
       options[:direction],
       options[:script],
-      options[:language]
+      options[:language],
+      options[:scale]
     )
     |> shaped!()
   end

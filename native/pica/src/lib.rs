@@ -57,8 +57,8 @@ fn glyph_boxes(
 // of a few words takes 10 to 15 microseconds. A font's first shaping prepares harfrust's layout
 // tables, and loading plus that first call stayed under 700 microseconds.
 
-/// Shapes `text` into glyphs with the caller's features, and its direction, script and language
-/// where given (`nil` leaves each to harfrust).
+/// Shapes `text` into glyphs with the caller's features, and its direction, script, language and
+/// scale where given (`nil` leaves each to harfrust, and a missing scale means font units).
 #[rustler::nif]
 fn shape(
     resource: ResourceArc<FontResource>,
@@ -67,12 +67,14 @@ fn shape(
     direction: Option<Direction>,
     script: Option<String>,
     language: Option<String>,
+    scale: Option<i32>,
 ) -> Result<Vec<Glyph>, ShapingError> {
     let settings = Settings {
         features,
         direction,
         script,
         language,
+        scale,
     };
     shaping::shape(&resource, text, settings)
 }

@@ -1,4 +1,5 @@
-//! Shaping text with harfrust, in font units at the font's default location.
+//! Shaping text with harfrust at the font's default location, in font units, or at a scale the
+//! caller gives, where harfrust rounds each glyph's position as HarfBuzz does.
 //!
 //! The text goes into harfrust's buffer one code point at a time, each with its index as its
 //! cluster, so clusters count characters, as hb-shape's do, not the UTF-8 bytes harfrust's
@@ -61,9 +62,10 @@ pub struct Settings {
     pub direction: Option<Direction>,
     pub script: Option<String>,
     pub language: Option<String>,
+    pub scale: Option<i32>,
 }
 
-/// Shapes `text` into glyphs, in font units.
+/// Shapes `text` into glyphs, in font units or at the caller's scale.
 pub fn shape(
     resource: &FontResource,
     text: &str,
@@ -93,7 +95,10 @@ pub fn shape(
     }
     buffer.guess_segment_properties();
 
-    let shaper_font = ShaperFont::new(resource.shaping_font());
+    let mut shaper_font = ShaperFont::new(resource.shaping_font());
+    if let Some(scale) = settings.scale {
+        shaper_font.set_scale(scale);
+    }
     harfrust::shape(
         &shaper_font,
         &mut buffer,

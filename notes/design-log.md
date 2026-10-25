@@ -211,6 +211,22 @@ later as a `{value, range}` value); vertical directions (they need `y_advance`, 
 label is horizontal text); a strict list of scripts (Pica would keep ISO 15924 current); script
 names as atoms; English as the default language.
 
+**Pica rounds as HarfBuzz does, not as FreeType does** (Steve, 2026-10-25). At `scale: 12 * 64`
+Pica matches hb-shape's own arithmetic (`--font-funcs=ot`) on all of the plan's 4.2 strings, while
+svglite matches `--font-funcs=ft`: its HarfBuzz takes advances from FreeType, which rounds the
+scale to 16.16 first, so a glyph in ten is a unit wider, and a label up to 6/64 point. Giggly
+compares with svglite within a tolerance. Rejected: an `advances: :freetype` option copying
+FreeType's arithmetic into Rust (exact on the test fonts, but code imitating another library);
+linking FreeType through `freetype-sys` (exact, but C in every release build); FreeType's
+rounding whenever a scale is given (Pica would differ from HarfBuzz by default).
+
+**A known harfrust difference is pinned, not hidden** (Steve, 2026-10-25). Where a font has no
+anchors for a mark, HarfBuzz stacks it the scale over 16 off its base, in whole units; harfrust
+scales units per em over 16 and rounds, so at a scale not a multiple of 16 the mark sits a unit
+further off. The fixture keeps hb-shape's values, and the shaping test asserts each listed case
+differs by exactly that, so a harfrust fix fails it and the entry goes. Rejected: dropping the
+case (hides it); patching harfrust in `Cargo.toml` (a fork to carry).
+
 **The harness is Giggly's, copied, without mutation testing** (Steve, 2026-10-24). Pica takes
 Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet have
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
@@ -228,7 +244,8 @@ CI deploy key for Tack (CI would pass, but a contributor still could not run the
 
 Expected values come from outside tools, never from Pica's own output: fontTools in
 `python:3.12-slim`, `hb-shape` from Debian's `libharfbuzz-bin` (installed in that image, so a
-generator can decode a WOFF with fontTools before shaping it), and R for svglite's widths. Each
+generator can decode a WOFF with fontTools before shaping it; HarfBuzz itself, through
+`uharfbuzz`, for what hb-shape does not print), and R for svglite's widths. Each
 generator script lives under `test/support/ground_truth/` with its Docker command in its header,
 and its output under `test/fixtures/` as Elixir terms. Test fonts are full original files under
 `test/fonts/`, each with its licence and a `FONTS.md` entry naming its source, version and
@@ -239,6 +256,8 @@ SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-25 — Shape at a scale, rounding each glyph as HarfBuzz does; §4: "Pica rounds as
+  HarfBuzz does, not as FreeType does", "A known harfrust difference is pinned, not hidden"
 - 2026-10-25 — Shape characters a font lacks to glyph 0, and hide invisible ones as HarfBuzz
   does; §4: "Shaping uses HarfBuzz's defaults"
 - 2026-10-25 — Shape text through harfrust, with HarfBuzz's defaults and per-call options; §4:
@@ -258,4 +277,5 @@ One line per milestone, newest first: the date, the commit's subject as its titl
 
 Open: CI on macOS (`erlef/setup-beam` runs on Linux and Windows only); variable fonts beyond the
 default instance (recommended after 0.1.0); a batch shaping function, if step 9's benchmarks
-call for one.
+call for one; harfrust's fallback mark gap (§4, "A known harfrust difference"), to report
+upstream.

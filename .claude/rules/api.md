@@ -32,7 +32,10 @@ paths:
   caller's rules (Giggly keeps R's), never Pica's.
 - **Numbers are font units, or HarfBuzz-scaled with `scale:`.** Pica never returns points or
   floats it computed itself; scaling and rounding happen inside shaping, per glyph, as HarfBuzz
-  does them.
+  does them, nominal advances included. The rounding is HarfBuzz's own, never FreeType's: a
+  renderer whose HarfBuzz takes advances from FreeType, as svglite's does, can differ by a unit
+  per glyph, and matching it is the caller's tolerance, not Pica's code (design-log §4, "Pica
+  rounds as HarfBuzz does, not as FreeType does").
 - **Shaping defaults are HarfBuzz's.** The features HarfBuzz enables for the script are on, and
   direction and script are guessed from the text, unless a call overrides them. The language is
   none unless a call gives one: Pica never reads the machine's locale, as C HarfBuzz does.

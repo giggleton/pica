@@ -1,6 +1,7 @@
 defmodule Pica.Glyph do
   @moduledoc """
-  One glyph of shaped text, as `Pica.shape/3` returns it. Every length is in font units.
+  One glyph of shaped text, as `Pica.shape/3` returns it. Every length is in font units, or at the
+  scale shaping was given, rounded to a whole unit as HarfBuzz rounds it.
 
     * `:glyph_id` — which of the font's glyphs it is; 0, `.notdef`, for a character the font
       lacks. An invisible character, such as a soft hyphen, is the font's space glyph, advancing
