@@ -2,6 +2,7 @@
 //! tables Pica reads are present and inside the data and that its metrics and outlines read, and
 //! reading the font's information.
 
+use crate::shaping::ShapePlans;
 use read_fonts::model::Blob;
 use read_fonts::tables::name::Encoding;
 use read_fonts::types::{NameId, Tag};
@@ -24,6 +25,7 @@ pub struct FontResource {
     // `OnceLock` filled once, whole, which a panic in its initializer leaves empty, never
     // half-written; asserting unwind safety claims no more than that.
     shaping_font: AssertUnwindSafe<harfrust::Font>,
+    shape_plans: ShapePlans,
 }
 
 #[rustler::resource_impl]
@@ -40,6 +42,10 @@ impl FontResource {
 
     pub fn shaping_font(&self) -> &harfrust::Font {
         &self.shaping_font.0
+    }
+
+    pub fn shape_plans(&self) -> &ShapePlans {
+        &self.shape_plans
     }
 }
 
@@ -139,6 +145,7 @@ pub fn load(bytes: &[u8], index: u64) -> Result<(FontResource, Info), LoadError>
         index,
         outlines,
         shaping_font: AssertUnwindSafe(shaping_font),
+        shape_plans: ShapePlans::default(),
     };
     let info = read_info(&resource.font()?, container, index, font_count, outlines)?;
     Ok((resource, info))

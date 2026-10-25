@@ -225,6 +225,8 @@ defmodule Pica do
                    ]
                  )
 
+  @long_text_bytes 1000
+
   @face_options NimbleOptions.new!(
                   for face <- [:plain, :bold, :italic, :bold_italic] do
                     {face, [type: {:struct, Font}, doc: "The #{face} face, a loaded font."]}
@@ -463,7 +465,8 @@ defmodule Pica do
   zero-width joiner (U+200D), is hidden as HarfBuzz hides it, whether or not the font has it: it
   shapes to the font's space glyph with an `x_advance` of 0, or, in a font with no space, to no
   glyph at all. Raises `ArgumentError` for text that is not valid UTF-8, and
-  `NimbleOptions.ValidationError` for an option not of its form.
+  `NimbleOptions.ValidationError` for an option not of its form. Text longer than 1,000 bytes is
+  shaped on a dirty scheduler, so a long text never holds up the processes around it.
 
   ## Options
 
@@ -511,7 +514,16 @@ defmodule Pica do
 
     font
     |> Font.resource()
-    |> Native.shape(
+    |> shape_on_scheduler(text, options)
+    |> shaped!()
+  end
+
+  # Shaping costs about half a microsecond a character, so text past @long_text_bytes would hold
+  # a normal scheduler for over half a millisecond; it goes to a dirty one, which costs a switch,
+  # a few microseconds, that labels never pay.
+  defp shape_on_scheduler(resource, text, options) when byte_size(text) <= @long_text_bytes do
+    Native.shape(
+      resource,
       text,
       options[:features],
       options[:direction],
@@ -519,7 +531,18 @@ defmodule Pica do
       options[:language],
       options[:scale]
     )
-    |> shaped!()
+  end
+
+  defp shape_on_scheduler(resource, text, options) do
+    Native.shape_long_text(
+      resource,
+      text,
+      options[:features],
+      options[:direction],
+      options[:script],
+      options[:language],
+      options[:scale]
+    )
   end
 
   defp check_text!(text) do

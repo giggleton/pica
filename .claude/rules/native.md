@@ -23,8 +23,13 @@ paths:
   copies the bytes it keeps, once, at load.
 - **Long work runs on a dirty scheduler.** `load` decodes and parses, which can take milliseconds,
   so it is `#[rustler::nif(schedule = "DirtyCpu")]`. A NIF stays on a normal scheduler only when
-  measurement shows its typical call well under a millisecond, as the glyph measurements' and
-  shaping's do (the numbers are beside them in `lib.rs`); re-measure when one starts doing more per glyph.
+  measurement shows its typical call well under a millisecond, as the glyph measurements' does
+  (the numbers are beside them in `lib.rs`); re-measure when one starts doing more per glyph. A
+  NIF whose cost grows with its input gets a second name on a dirty scheduler, sharing its
+  function, and the Elixir side picks by the input's size, as `shape/3` does past 1,000 bytes
+  (design-log §4, "`shape/3` moves long text to a dirty scheduler").
+- **A font keeps the shape plans it builds**, a bounded few in its resource, keyed as harfrust's
+  `ShapePlanKey` matches them, since building one costs twice what shaping a label does.
 - **Measures cross the boundary as lists of tuples, or of structs the user chose.** A map's
   keys are built per glyph, so a measure is a tuple (a glyph's box) unless the user has decided
   its fields are too easy to confuse positionally, as for a shaped glyph, which Rust builds as a

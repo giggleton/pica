@@ -61,7 +61,8 @@ defmodule Pica.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:jump_credo_checks, "~> 0.6", only: [:dev, :test], runtime: false},
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.40", only: [:dev], runtime: false}
+      {:ex_doc, "~> 0.40", only: [:dev], runtime: false},
+      {:benchee, "~> 1.5", only: [:dev], runtime: false}
     ]
   end
 

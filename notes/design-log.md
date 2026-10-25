@@ -266,6 +266,19 @@ Rejected: fontdb's query (CSS substitution, above); walking the font directories
 own reader (the platform knowledge is fontdb's); mapping files (a file cut short mid-scan crashes
 the VM).
 
+**A font keeps the shape plans it builds** (2026-10-25). A plan, what HarfBuzz decides once for a
+direction, script, language and set of features, cost 2.3 µs to build against 1.1 µs to shape a
+label with it, so the resource keeps up to 32, matched by harfrust's `ShapePlanKey`: 100 labels
+take about 0.35 ms (`bench/shaping.exs`), against 0.64 ms building a plan per call. Rejected:
+building per call (harfrust's default); an unbounded cache (a caller varying features without
+end would grow it without end).
+
+**`shape/3` moves long text to a dirty scheduler** (Steve, 2026-10-25). Shaping costs about 0.45
+µs a character, so text of up to 1,000 bytes, every label, shapes on a normal scheduler in under
+half a millisecond, and longer text on a dirty CPU scheduler, through a second NIF name sharing
+the function. Rejected: always dirty (a scheduler switch on every label, which could double a
+batch); always normal (a paragraph would hold a scheduler for milliseconds).
+
 **The harness is Giggly's, copied, without mutation testing** (Steve, 2026-10-24). Pica takes
 Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet have
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
@@ -288,13 +301,16 @@ generator can decode a WOFF with fontTools before shaping it; HarfBuzz itself, t
 generator script lives under `test/support/ground_truth/` with its Docker command in its header,
 and its output under `test/fixtures/` as Elixir terms. Test fonts are full original files under
 `test/fonts/`, each with its licence and a `FONTS.md` entry naming its source, version and
-SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL.
+SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL. Performance is
+measured by `bench/shaping.exs` (Benchee, dev only), never by the suite.
 
 ## 6. Milestone log
 
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-25 — Keep each font's shape plans, and shape long text on a dirty scheduler; §4: "A
+  font keeps the shape plans it builds", "`shape/3` moves long text to a dirty scheduler"
 - 2026-10-25 — Find fonts by name: registered families first, then the nearest installed face of
   the kind asked for; §4: "`register/2` takes loaded fonts", "A registered name is the app's
   label", "Registering a family again replaces it whole", "`lookup/3`'s face defaults to
@@ -321,6 +337,7 @@ One line per milestone, newest first: the date, the commit's subject as its titl
 
 Open: CI on macOS (`erlef/setup-beam` runs on Linux and Windows only); variable fonts beyond the
 default instance (recommended after 0.1.0); a batch shaping function, if step 9's benchmarks
-call for one; whether to rescan installed fonts, which are scanned once per VM; harfrust's
+call for one; `glyph_boxes/2` over a whole font takes 2–3 ms on a normal scheduler, so the glyph
+measures may want the same split as `shape/3`; whether to rescan installed fonts, which are scanned once per VM; harfrust's
 fallback mark gap (§4, "A known harfrust difference"), to report
 upstream.

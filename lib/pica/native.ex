@@ -84,6 +84,21 @@ defmodule Pica.Native do
     do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
+  # `shape/7` on a dirty CPU scheduler, for text longer than `Pica.shape/3`'s limit for a normal
+  # one; the same function behind another name.
+  @spec shape_long_text(
+          reference(),
+          String.t(),
+          [{String.t(), non_neg_integer()}],
+          :left_to_right | :right_to_left | nil,
+          String.t() | nil,
+          String.t() | nil,
+          pos_integer() | nil
+        ) :: {:ok, [Pica.Glyph.t()]} | {:error, term()}
+  def shape_long_text(_resource, _text, _features, _direction, _script, _language, _scale),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
   # Every face of every installed font file, or of every font file in `directory` and beneath it
   # when it is a path rather than `nil`: its file's path, its index in the file, its family names
   # in every language the font gives one, its weight class, whether it is italic or oblique, and

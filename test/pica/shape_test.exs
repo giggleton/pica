@@ -83,6 +83,20 @@ defmodule Pica.ShapeTest do
       %{font: load_font("Lato-Regular.ttf")}
     end
 
+    # Text past 1,000 bytes goes to the NIF on a dirty scheduler, which shares the normal one's
+    # function; this catches shape/3 sending long text to a name that shapes it otherwise.
+    test "text past 1,000 bytes shapes as the normal-scheduler NIF shapes it", %{font: font} do
+      text = String.duplicate("AVATAR To ", 120)
+      assert byte_size(text) > 1000
+
+      {:ok, expected} =
+        font
+        |> Pica.Font.resource()
+        |> Pica.Native.shape(text, [], nil, nil, nil, nil)
+
+      assert Pica.shape(font, text) == expected
+    end
+
     test "no text shapes to no glyphs", %{font: font} do
       assert Pica.shape(font, "") == []
     end

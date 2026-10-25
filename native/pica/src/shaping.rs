@@ -14,9 +14,12 @@
 //! error, never a panic.
 
 use crate::font::FontResource;
-use harfrust::{Buffer, Feature, Language, Script, ShapeOptions, ShaperFont, Tag};
+use harfrust::{
+    Buffer, Feature, Language, Script, ShapeOptions, ShapePlan, ShapePlanKey, ShaperFont, Tag,
+};
 use rustler::{NifStruct, NifTaggedEnum, NifUnitEnum};
 use std::str::FromStr;
+use std::sync::{Arc, RwLock};
 
 /// One shaped glyph, as `%Pica.Glyph{}`.
 #[derive(NifStruct)]
@@ -54,6 +57,61 @@ impl From<Direction> for harfrust::Direction {
 pub enum ShapingError {
     InvalidSetting(String),
     ShapingFailed(String),
+}
+
+/// The shape plans a font has built: what HarfBuzz decides once for a direction, script, language
+/// and set of features (which lookups apply, in which order), kept so a later call with the same
+/// settings shapes without deciding again. Building one costs more than shaping a short label.
+/// Only the first `PLAN_LIMIT` are kept, so a caller varying its features without end costs a
+/// build per call, never unbounded memory. A lock poisoned by a panic elsewhere still holds
+/// complete plans, so it is used as it is.
+#[derive(Default)]
+pub struct ShapePlans(RwLock<Vec<Arc<ShapePlan>>>);
+
+const PLAN_LIMIT: usize = 32;
+
+impl ShapePlans {
+    fn plan(
+        &self,
+        font: &harfrust::Font,
+        buffer: &Buffer,
+        features: &[Feature],
+    ) -> Result<Arc<ShapePlan>, ShapingError> {
+        let direction = buffer.direction();
+        if direction == harfrust::Direction::Invalid {
+            return Err(ShapingError::ShapingFailed(
+                "the text's direction is unset".to_string(),
+            ));
+        }
+        let key = ShapePlanKey::new(font, buffer.script(), direction)
+            .language(buffer.language())
+            .features(features);
+        let kept = self
+            .0
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .iter()
+            .find(|plan| key.matches(plan))
+            .cloned();
+        if let Some(plan) = kept {
+            return Ok(plan);
+        }
+        let plan = Arc::new(ShapePlan::new(
+            font,
+            direction,
+            buffer.script(),
+            buffer.language(),
+            features,
+        ));
+        let mut plans = self
+            .0
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if plans.len() < PLAN_LIMIT {
+            plans.push(Arc::clone(&plan));
+        }
+        Ok(plan)
+    }
 }
 
 /// What the caller set; `None` leaves the setting to harfrust.
@@ -95,6 +153,9 @@ pub fn shape(
     }
     buffer.guess_segment_properties();
 
+    let plan = resource
+        .shape_plans()
+        .plan(resource.shaping_font(), &buffer, &features)?;
     let mut shaper_font = ShaperFont::new(resource.shaping_font());
     if let Some(scale) = settings.scale {
         shaper_font.set_scale(scale);
@@ -102,7 +163,7 @@ pub fn shape(
     harfrust::shape(
         &shaper_font,
         &mut buffer,
-        ShapeOptions::new().features(&features),
+        ShapeOptions::new().plan(Some(&plan)).features(&features),
     )
     .map_err(|error| ShapingError::ShapingFailed(error.to_string()))?;
 

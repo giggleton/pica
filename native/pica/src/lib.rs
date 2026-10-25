@@ -55,14 +55,38 @@ fn glyph_boxes(
     glyphs::glyph_boxes(&resource, &glyph_ids)
 }
 
-// Shaping stays on a normal scheduler too: measured on Lato, Source Serif 4 and Roboto, a label
-// of a few words takes 10 to 15 microseconds. A font's first shaping prepares harfrust's layout
-// tables, and loading plus that first call stayed under 700 microseconds.
+// Shaping costs about 0.45 microseconds a character once the font keeps a shape plan for the
+// text's settings (bench/shaping.exs: 100 labels in about 0.35 ms, building a plan per call about
+// twice that), so text of up to 1,000 bytes, every label, shapes on a normal scheduler in under
+// half a millisecond, and longer text on a dirty one. `Pica.shape/3` chooses between the two
+// names, which share one function.
 
 /// Shapes `text` into glyphs with the caller's features, and its direction, script, language and
-/// scale where given (`nil` leaves each to harfrust, and a missing scale means font units).
+/// scale where given (`nil` leaves each to harfrust, and a missing scale means font units). For
+/// text of up to 1,000 bytes.
 #[rustler::nif]
 fn shape(
+    resource: ResourceArc<FontResource>,
+    text: &str,
+    features: Vec<(String, u32)>,
+    direction: Option<Direction>,
+    script: Option<String>,
+    language: Option<String>,
+    scale: Option<i32>,
+) -> Result<Vec<Glyph>, ShapingError> {
+    let settings = Settings {
+        features,
+        direction,
+        script,
+        language,
+        scale,
+    };
+    shaping::shape(&resource, text, settings)
+}
+
+/// `shape`, on a dirty CPU scheduler, for text longer than 1,000 bytes.
+#[rustler::nif(schedule = "DirtyCpu")]
+fn shape_long_text(
     resource: ResourceArc<FontResource>,
     text: &str,
     features: Vec<(String, u32)>,
