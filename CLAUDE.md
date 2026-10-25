@@ -80,6 +80,9 @@ invariants. Add a line here when an area gets its rules file; nothing else about
 
 ## Conventions
 
+- **Never commit, push, merge or publish without the user's express authorization for that act.**
+  It covers only the act it names, once: "commit" is not "push", and a request to make a change
+  authorizes neither. Never prompt the user to commit. A commit message: subject, wrapped body.
 - **Quality gate — run `mix quality` before every commit and keep it green.** It runs the
   `quality_steps` list in `mix.exs` in order and **stops at the first failing step**, ending with a
   `❌ mix quality FAILED at step: <name>` banner; CI runs the same list with `mix quality --check`.
@@ -92,9 +95,6 @@ invariants. Add a line here when an area gets its rules file; nothing else about
   status (`0`), masking the gate's failure. When a step fails, read the output directly ABOVE the
   final `❌ … FAILED` banner. To iterate on one check in isolation, run that single `mix` or
   `cargo` command directly — still bare.
-- Do not commit or ask the user to commit changes. The user will prompt you to commit and does not
-  want to be reminded/encouraged to do so. Similarly do not merge or publish without a prompt from
-  the user. A commit message is a subject line plus a wrapped body.
 - **Merging a feature branch:** if the branch has just one commit, merge it fast-forward (no merge
   commit). Use a `--no-ff` merge commit only when the branch carries two or more commits.
 - Work in **small, verifiable increments** and keep the suite green. Prefer async tests wherever
