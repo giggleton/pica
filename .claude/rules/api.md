@@ -2,7 +2,9 @@
 paths:
   - "lib/pica.ex"
   - "lib/pica/font.ex"
+  - "lib/pica/fonts.ex"
   - "lib/pica/glyph.ex"
+  - "lib/pica/nearest_face.ex"
   - "lib/pica/shape_options.ex"
 ---
 
@@ -17,6 +19,15 @@ paths:
   always win; the installed fonts are a fallback, on unless a lookup passes `installed: false`
   (design-log §4, the entries beginning "A name finds the fonts the app gave Pica first" and "An
   app opts out"). No global switch records the choice.
+- **`register/2` files loaded fonts under the app's name for them**, never bytes, and never checks
+  the name against a font's own family; registering a family again replaces it whole
+  (design-log §4, "`register/2` takes loaded fonts", "A registered name is the app's label",
+  "Registering a family again replaces it whole").
+- **An installed face is the nearest of its kind, never another kind.** A family name matches one
+  of the font's family names exactly; plain is upright and below 600, bold upright and 600 or
+  above, italic and bold italic italic or oblique; the nearest weight wins, then the width nearest
+  normal, then path and index. `Pica.NearestFace` holds the rule as a pure fold, so the registry
+  module is the only impure one (design-log §4, "An installed face is the nearest of its kind").
 - **Each face is looked up on its own.** A face the app did not give falls through to the
   installed fonts, even when the app gave another face of that family; the regular face never
   stands in for a missing bold.

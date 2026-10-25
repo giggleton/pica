@@ -39,6 +39,8 @@ moves into §4, with its rejected alternatives, as each decision is ratified.
 
 `Pica` is the public API and the root boundary; `Pica.Font` is the opaque struct a loaded font comes
 back in; `Pica.Glyph` is a shaped glyph; `Pica.ShapeOptions` checks shaping's options;
+`Pica.Fonts` is the registry, registered and installed fonts by name; `Pica.NearestFace` chooses
+an installed face;
 `Pica.Native` holds the NIF stubs. `mix boundary.spec` prints the current graph.
 
 ## 4. Key design decisions (the "why", so we don't relitigate)
@@ -227,6 +229,43 @@ further off. The fixture keeps hb-shape's values, and the shaping test asserts e
 differs by exactly that, so a harfrust fix fails it and the entry goes. Rejected: dropping the
 case (hides it); patching harfrust in `Cargo.toml` (a fork to carry).
 
+**`register/2` takes loaded fonts** (Steve, 2026-10-25). `register("Lato", plain: font, bold:
+font)` takes `%Pica.Font{}` values from `load/2`, which already handles bad bytes, a collection's
+index and WOFF, with `{:error, reason}` for the caller; `register` only files them and cannot
+fail on font data. Rejected: bytes, as the plan sketched (one call shorter, but load's errors
+repeated inside `register`, and a new way to pick a collection's font); either.
+
+**A registered name is the app's label** (Steve, 2026-10-25). A font may be registered under any
+name, as svglite's `user_fonts` allows, so an app can register `"Body"` or keep two Latos apart;
+`info/1` still reports the font's own family. Rejected: requiring the font's own family name
+(catches a mix-up, but refuses a font whose name is missing or odd).
+
+**Registering a family again replaces it whole** (Steve, 2026-10-25). The faces a call gives are
+the family's faces, so nothing from an earlier call lingers. Rejected: merging faces (a bold could
+be added later, but what is registered would depend on the order of calls across the app).
+
+**`lookup/3`'s face defaults to `:plain`** (Steve, 2026-10-25). The faces are `:plain`, `:bold`,
+`:italic` and `:bold_italic`, the keys `register/2` takes; `lookup("Lato")` is the plain face, and
+`lookup("Lato", installed: false)` takes options in the face's place. Rejected: a required face
+(every call says which it means); `:regular` for `:plain` (the commoner word, but not the plan's
+or R's).
+
+**An installed face is the nearest of its kind** (Steve, 2026-10-25). Among installed fonts with
+the family's name, plain is the upright weight nearest 400 below 600, bold the upright weight
+nearest 700 at 600 or above, and italic and bold italic the same among italic or oblique fonts;
+a tie goes to the heavier, then the width nearest normal. No font of the kind is `:error`, so the
+face is always the kind asked for. Rejected: exact weights only (400 and 700; a family whose
+bold is 800 would have none, though R finds it); full CSS matching, fontdb's own query (it
+returns the regular for a missing bold, substituting).
+
+**Installed fonts are listed through fontdb** (2026-10-25). fontdb 0.24 knows where each
+platform keeps fonts, reading fontconfig's configuration on Linux, and reports each face's
+family names, weight, style and width; Pica takes that list, chooses in `Pica.NearestFace`, and
+loads only the chosen face. Its `memmap` feature is off. A scan of 605 faces took 376 ms.
+Rejected: fontdb's query (CSS substitution, above); walking the font directories with Pica's
+own reader (the platform knowledge is fontdb's); mapping files (a file cut short mid-scan crashes
+the VM).
+
 **The harness is Giggly's, copied, without mutation testing** (Steve, 2026-10-24). Pica takes
 Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet have
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
@@ -256,6 +295,11 @@ SHA-256 — no subsets, since Lato and Lobster reserve their names under the OFL
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-25 — Find fonts by name: registered families first, then the nearest installed face of
+  the kind asked for; §4: "`register/2` takes loaded fonts", "A registered name is the app's
+  label", "Registering a family again replaces it whole", "`lookup/3`'s face defaults to
+  `:plain`", "An installed face is the nearest of its kind", "Installed fonts are listed through
+  fontdb"
 - 2026-10-25 — Shape at a scale, rounding each glyph as HarfBuzz does; §4: "Pica rounds as
   HarfBuzz does, not as FreeType does", "A known harfrust difference is pinned, not hidden"
 - 2026-10-25 — Shape characters a font lacks to glyph 0, and hide invisible ones as HarfBuzz
@@ -277,5 +321,6 @@ One line per milestone, newest first: the date, the commit's subject as its titl
 
 Open: CI on macOS (`erlef/setup-beam` runs on Linux and Windows only); variable fonts beyond the
 default instance (recommended after 0.1.0); a batch shaping function, if step 9's benchmarks
-call for one; harfrust's fallback mark gap (§4, "A known harfrust difference"), to report
+call for one; whether to rescan installed fonts, which are scanned once per VM; harfrust's
+fallback mark gap (§4, "A known harfrust difference"), to report
 upstream.

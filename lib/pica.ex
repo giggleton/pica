@@ -2,7 +2,7 @@ defmodule Pica do
   @moduledoc """
   Text shaping and font metrics for Elixir, through HarfBuzz's Rust port.
 
-  Pica measures text from font files. A caller registers font files under a family name, then
+  Pica measures text from font files. A caller registers loaded fonts under a family name, then
   asks, by family and face, for each string's glyphs: which glyph, which characters it came from,
   how far it advances once kerning, ligatures and contextual forms are applied, and how far it
   would advance unshaped. It also reports font-wide metrics and glyph bounding boxes. Nothing is
@@ -24,6 +24,25 @@ defmodule Pica do
   `load/2` reads a font from its file's bytes, in any of the containers fonts ship in: a plain
   TrueType or OpenType font, a font collection (several fonts in one file, chosen by `:index`),
   WOFF or WOFF2. `info/1` reports what the font says about itself.
+
+  ## Fonts by name
+
+  A family's faces are its regular (`:plain`), bold, italic and bold italic fonts. `register/2`
+  files loaded fonts as a family's faces under a name, and `lookup/3` finds a face by that name
+  from anywhere in the application. Registered fonts are kept in `:persistent_term`, so reading
+  them costs nothing, but registering a family again, or unregistering one, makes every process
+  in the VM garbage collect: register fonts once, when the application starts.
+
+  A face the registered fonts lack is looked for among the machine's installed fonts, unless the
+  lookup passes `installed: false`. An installed font is a face of a family when one of its
+  family names (the typographic family name, else the family name, in any language the font
+  gives) is exactly the name asked for, and the nearest of its kind is chosen: for `:plain`, the
+  upright font whose weight is nearest 400 below 600 (semibold); for `:bold`, the upright font
+  whose weight is nearest 700 at 600 or above; for `:italic` and `:bold_italic`, the same among
+  italic or oblique fonts. A tie goes to the heavier weight, then to the width nearest normal.
+  A family with no font of the kind asked for has no such face, so the lookup is `:error`: an
+  upright font never stands in for an italic, nor a regular for a bold. A variable font is
+  measured at its default instance.
 
   ## Glyphs
 
@@ -73,7 +92,7 @@ defmodule Pica do
     deps: [NimbleOptions, {Mix, :compile}, {Rustler, :compile}, {RustlerPrecompiled, :compile}],
     exports: []
 
-  alias Pica.{Font, Glyph, Native}
+  alias Pica.{Font, Fonts, Glyph, Native}
 
   @load_options NimbleOptions.new!(
                   index: [
@@ -206,6 +225,28 @@ defmodule Pica do
                    ]
                  )
 
+  @face_options NimbleOptions.new!(
+                  for face <- [:plain, :bold, :italic, :bold_italic] do
+                    {face, [type: {:struct, Font}, doc: "The #{face} face, a loaded font."]}
+                  end
+                )
+
+  @lookup_options NimbleOptions.new!(
+                    installed: [
+                      type: :boolean,
+                      default: true,
+                      doc: """
+                      Whether to look among the machine's installed fonts for a face the
+                      registered fonts lack.
+                      """
+                    ]
+                  )
+
+  @typedoc "A face of a family: its regular, bold, italic or bold italic font."
+  @type face :: :plain | :bold | :italic | :bold_italic
+
+  defguardp is_face(face) when face in [:plain, :bold, :italic, :bold_italic]
+
   defguardp is_glyph_id(glyph_id, glyph_count)
             when is_integer(glyph_id) and glyph_id >= 0 and glyph_id < glyph_count
 
@@ -231,11 +272,7 @@ defmodule Pica do
   @spec load(binary(), keyword()) :: {:ok, Font.t()} | {:error, load_error()}
   def load(bytes, options \\ []) when is_binary(bytes) do
     options = NimbleOptions.validate!(options, @load_options)
-
-    case Native.load(bytes, options[:index]) do
-      {:ok, {resource, info}} -> {:ok, Font.new(resource, info)}
-      {:error, reason} -> {:error, reason}
-    end
+    Font.load(bytes, options[:index])
   end
 
   @doc """
@@ -250,6 +287,102 @@ defmodule Pica do
   """
   @spec info(Font.t()) :: info()
   def info(font), do: Font.info(font)
+
+  @doc """
+  Registers loaded fonts as the faces of `family`, so `lookup/3` finds them by name.
+
+  The name is the caller's: it need not be the font's own family name. Registering a family again
+  replaces it whole, so a face given before and not now is no longer registered. Fonts are meant
+  to be registered once, when the application starts: registering again or unregistering is
+  costly for the whole VM (see "Fonts by name" above). Raises `NimbleOptions.ValidationError` for
+  a face that is not a loaded font, and `ArgumentError` when no face is given.
+
+  ## Faces
+
+  #{NimbleOptions.docs(@face_options)}
+
+  ## Examples
+
+      iex> {:ok, regular} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> {:ok, bold} = Pica.load(File.read!("test/fonts/Lato-Bold.ttf"))
+      iex> Pica.register("Lato for the register example", plain: regular, bold: bold)
+      :ok
+      iex> Pica.registered?("Lato for the register example")
+      true
+  """
+  @spec register(String.t(), [{face(), Font.t()}]) :: :ok
+  def register(family, faces) when is_binary(family) and is_list(faces) do
+    faces = NimbleOptions.validate!(faces, @face_options)
+
+    if faces == [] do
+      raise ArgumentError, "expected at least one face to register #{inspect(family)} with"
+    end
+
+    Fonts.register(family, Map.new(faces))
+  end
+
+  @doc """
+  Forgets a registered family. Returns `:ok` whether or not it was registered.
+  """
+  @spec unregister(String.t()) :: :ok
+  def unregister(family) when is_binary(family), do: Fonts.unregister(family)
+
+  @doc """
+  Whether `family` is registered. Installed fonts are not registered.
+  """
+  @spec registered?(String.t()) :: boolean()
+  def registered?(family) when is_binary(family), do: Fonts.registered?(family)
+
+  @doc """
+  The names of the registered families, sorted.
+  """
+  @spec families() :: [String.t()]
+  def families, do: Fonts.families()
+
+  @doc """
+  Finds a face of `family` by name: `{:ok, font}`, or `:error` when the face is found nowhere.
+
+  The face, `:plain` unless given, comes from the fonts registered under `family` first. When
+  they lack it, the machine's installed fonts are searched, unless `installed: false`: for an
+  installed font whose family name is exactly `family`, of the face asked for, as "Fonts by name"
+  above describes. A missing face is never answered with another: a registered plain face does
+  not stand in for a missing bold. The face may be left out while options are given, as in
+  `lookup("Lato", installed: false)`.
+
+  The first search of the installed fonts reads every font file on the machine, which can take a
+  second or more; its result is kept for the life of the VM, so fonts installed afterwards are
+  not seen.
+
+  ## Options
+
+  #{NimbleOptions.docs(@lookup_options)}
+
+  ## Examples
+
+      iex> {:ok, regular} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> Pica.register("Lato for the lookup example", plain: regular)
+      iex> {:ok, font} = Pica.lookup("Lato for the lookup example")
+      iex> Pica.info(font).subfamily
+      "Regular"
+      iex> Pica.lookup("Lato for the lookup example", :bold, installed: false)
+      :error
+  """
+  @spec lookup(String.t(), face() | keyword(), keyword()) :: {:ok, Font.t()} | :error
+  def lookup(family, face \\ :plain, options \\ [])
+
+  def lookup(family, options, []) when is_binary(family) and is_list(options) do
+    lookup(family, :plain, options)
+  end
+
+  def lookup(family, face, options) when is_binary(family) and is_face(face) do
+    options = NimbleOptions.validate!(options, @lookup_options)
+    Fonts.lookup(family, face, options[:installed])
+  end
+
+  def lookup(family, not_a_face, _options) when is_binary(family) do
+    raise ArgumentError,
+          "expected a face, :plain, :bold, :italic or :bold_italic, got: #{inspect(not_a_face)}"
+  end
 
   @doc """
   The glyph each character of `text` maps to through the font's character map, one per character

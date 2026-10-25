@@ -220,7 +220,14 @@
             # Every file under `lib/` is read: a function of fonts and strings reads no config, no
             # clock and no process. A module that must be impure (the registry, if it holds
             # global state) is excluded here by name, with its reason.
-            {Tack.Credo.Check.CorePurity, [files: %{included: ["lib/"]}]},
+            # why: Pica.Fonts is the registry: families found by name from any process must live
+            # in shared state (:persistent_term), and installed fonts are read from their files.
+            # Every other module stays pure, and Pica.NearestFace keeps its choice a pure fold.
+            # instead of: an ETS table owned by a Pica process — rejected because it is a process
+            # to start and supervise for writes made once (design-log §4, "The fonts given to Pica
+            # live in `:persistent_term`").
+            {Tack.Credo.Check.CorePurity,
+             [files: %{included: ["lib/"], excluded: [~r"/lib/pica/fonts\.ex$"]}]},
 
             #
             ## The repo-local checks (`.credo/checks/`), each a rule CLAUDE.md states in prose

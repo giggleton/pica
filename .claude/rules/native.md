@@ -32,6 +32,10 @@ paths:
 - **harfrust shapes with the resource's own `harfrust::Font`**, built at load over the same
   bytes, shared rather than copied, so the layout tables harfrust prepares on a font's first
   shaping are kept and reused by every later call; a font harfrust cannot read does not load.
+- **Installed fonts are listed through fontdb, read and never mapped.** Its `memmap` feature is
+  off, since a mapped file cut short mid-scan would crash the VM; the scan runs on a dirty IO
+  scheduler, and Pica loads only the face a lookup chooses (design-log §4, "Installed fonts are
+  listed through fontdb").
 - **No Elixir font parser.** Anything read from a font is read in Rust, through the fontations
   crates and harfrust; the Elixir side wraps, validates options, and names errors.
 - **Each stub in `Pica.Native` matches a NIF in `native/pica/src` by name and arity**, and raises

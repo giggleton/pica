@@ -82,4 +82,22 @@ defmodule Pica.Native do
         ) :: {:ok, [Pica.Glyph.t()]} | {:error, term()}
   def shape(_resource, _text, _features, _direction, _script, _language, _scale),
     do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  # Every face of every installed font file, or of every font file in `directory` and beneath it
+  # when it is a path rather than `nil`: its file's path, its index in the file, its family names
+  # in every language the font gives one, its weight class, whether it is italic or oblique, and
+  # its width class, from 1 (ultra-condensed) to 9 (ultra-expanded), 5 being normal. Runs on a
+  # dirty IO scheduler, since it reads every file.
+  @spec installed_faces(String.t() | nil) :: [
+          %{
+            path: String.t(),
+            index: non_neg_integer(),
+            families: [String.t()],
+            weight: non_neg_integer(),
+            italic: boolean(),
+            width: 1..9
+          }
+        ]
+  def installed_faces(_directory), do: :erlang.nif_error(:nif_not_loaded)
 end

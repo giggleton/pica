@@ -7,11 +7,24 @@ defmodule Pica.Font do
   process heap, and its information, read once when it was loaded.
   """
 
+  alias Pica.Native
+
   @enforce_keys [:resource, :info]
   defstruct [:resource, :info]
 
   @typedoc "A loaded font."
   @opaque t :: %__MODULE__{resource: reference(), info: Pica.info()}
+
+  @doc false
+  # Loads the font at `index` from a font file's bytes, for `Pica.load/2` and the installed fonts
+  # `Pica.lookup/3` finds: `{:ok, font}`, or `{:error, reason}` as `Pica.load_error/0` describes.
+  @spec load(binary(), non_neg_integer()) :: {:ok, t()} | {:error, Pica.load_error()}
+  def load(bytes, index) when is_binary(bytes) and is_integer(index) and index >= 0 do
+    case Native.load(bytes, index) do
+      {:ok, {resource, info}} -> {:ok, new(resource, info)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   @doc false
   # Builds the struct from what `Pica.Native.load/2` returns, turning the absent values Rust

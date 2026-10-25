@@ -5,10 +5,12 @@
 
 mod font;
 mod glyphs;
+mod installed;
 mod shaping;
 
 use font::{FontResource, Info, LoadError};
 use glyphs::{GlyphBox, GlyphError};
+use installed::InstalledFace;
 use rustler::{Binary, ResourceArc};
 use shaping::{Direction, Glyph, Settings, ShapingError};
 
@@ -77,6 +79,13 @@ fn shape(
         scale,
     };
     shaping::shape(&resource, text, settings)
+}
+
+/// Every installed face, or every face in `directory` (`nil` for the installed fonts). Scanning
+/// reads every font file on the machine, so this runs on a dirty IO scheduler.
+#[rustler::nif(schedule = "DirtyIo")]
+fn installed_faces(directory: Option<String>) -> Vec<InstalledFace> {
+    installed::installed_faces(directory)
 }
 
 rustler::init!("Elixir.Pica.Native");

@@ -49,7 +49,7 @@ invariants. Add a line here when an area gets its rules file; nothing else about
   `.claude/rules/dependencies.md`; the `dependency-updates` skill.
 - **The documentation system** (what goes where, the ratchet) — `.claude/rules/docs.md`; the
   `docs-sync` skill.
-- **The public API** (`Pica`, `Pica.Font`, `Pica.Glyph`; loading, glyph measures and shaping built, decisions in §4) —
+- **The public API** (`Pica`, `Pica.Font`, `Pica.Glyph`; built up to the registry; §4 decides) —
   `.claude/rules/api.md`.
 - **The NIF** (`Pica.Native`, the crate in `native/pica`) — `.claude/rules/native.md`.
 
