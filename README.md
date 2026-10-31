@@ -5,8 +5,8 @@ HarfBuzz's Rust port.
 
 Pica measures text from font files. Register fonts under a family name, then ask, by family and
 face, for each string's glyphs: which glyph, which characters it came from, and how far it
-advances with kerning, ligatures and contextual forms applied. It also reports font-wide metrics
-and glyph bounding boxes. Nothing is drawn.
+advances with kerning, ligatures and contextual forms applied. It also reports font-wide metrics,
+glyph bounding boxes, and glyph outlines as drawing commands. Nothing is rendered.
 
 ```elixir
 {:ok, font} = Pica.load(File.read!("Lato-Regular.ttf"))

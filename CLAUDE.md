@@ -6,8 +6,8 @@ Guidance for Claude Code (or any agent) working in this repo.
 
 Pica measures text from font files for Elixir: it shapes strings with HarfBuzz's Rust port
 (harfrust) through a Rustler NIF and returns each glyph's id, cluster and advances, plus font-wide
-metrics and glyph boxes, in font units or at a caller's scale. Nothing is drawn. Its first consumer
-is Giggly (`~/repos/giggly`), which must match R's svglite widths; Pica never depends on it.
+metrics, glyph boxes and outlines, in font units or at a caller's scale; nothing is rendered. Giggly
+(`~/repos/giggly`), its first consumer, must match R's svglite widths; Pica never depends on it.
 
 ## Where the documentation lives
 

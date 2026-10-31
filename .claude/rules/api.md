@@ -43,10 +43,11 @@ paths:
   caller's rules (Giggly keeps R's), never Pica's.
 - **Numbers are font units, or HarfBuzz-scaled with `scale:`.** Pica never returns points or
   floats it computed itself; scaling and rounding happen inside shaping, per glyph, as HarfBuzz
-  does them, nominal advances included. The rounding is HarfBuzz's own, never FreeType's: a
-  renderer whose HarfBuzz takes advances from FreeType, as svglite's does, can differ by a unit
-  per glyph, and matching it is the caller's tolerance, not Pica's code (design-log §4, "Pica
-  rounds as HarfBuzz does, not as FreeType does").
+  does them, nominal advances included. Outlines are floats, the font's points as skrifa draws
+  them (design-log §4, "An outline's coordinates are always floats"). The rounding is
+  HarfBuzz's own, never FreeType's: a renderer whose HarfBuzz takes advances from FreeType, as
+  svglite's does, can differ by a unit per glyph, and matching it is the caller's tolerance, not
+  Pica's code (design-log §4, "Pica rounds as HarfBuzz does, not as FreeType does").
 - **Shaping defaults are HarfBuzz's.** The features HarfBuzz enables for the script are on, and
   direction and script are guessed from the text, unless a call overrides them. The language is
   none unless a call gives one: Pica never reads the machine's locale, as C HarfBuzz does.
@@ -64,14 +65,19 @@ paths:
   information is read once, at load, so `Pica.info/1` never fails and never calls the NIF.
 - **`info/1` reports the font's own numbers**: the `hhea` line metrics as the table gives them,
   the names as fontTools' `getDebugName` chooses them, and `:none` for a value the font lacks.
-- **Glyphs are measured by glyph id, at the font's default location.** `nominal_advances/2` and
-  `glyph_boxes/2` take ids, as shaping returns them; `glyph_ids/2` is the font's character map
-  alone, one id per code point, 0 for a character the font lacks, never a shaped result
-  (design-log §4, "Glyphs are measured by glyph id").
+- **Glyphs are measured by glyph id, at the font's default location.** `nominal_advances/2`,
+  `glyph_boxes/2` and `glyph_outlines/2` take ids, as shaping returns them; `glyph_ids/2` is the
+  font's character map alone, one id per code point, 0 for a character the font lacks, never a
+  shaped result (design-log §4, "Glyphs are measured by glyph id").
 - **A glyph's box is its outline's control box, never the box the font stores**: every point,
   on and off the curve, as FreeType computes it unscaled, in whole font units. A glyph with no
   outline has no box, `:none`, never zeros; what such a glyph measures is the caller's rule
   (design-log §4, "A glyph's box is its outline's control box", "A glyph with no outline").
+- **A glyph's outline is what skrifa draws, in FreeType's path style**: unscaled and unhinted, a
+  contour that begins off the curve started where FreeType starts it, as flat tuples in one list
+  per glyph, with no `:line` back to the start before a `:close`. A glyph that draws nothing is
+  `:none`, and so is every glyph of a font with no outlines (design-log §4, "`glyph_outlines/2`
+  draws each glyph as skrifa draws it", "Outline commands are flat tuples").
 - **A glyph id the font lacks raises `ArgumentError`** naming the font's last glyph id, checked
   in Elixir against `glyph_count` before the NIF is called; so does a glyph whose data does not
   read.

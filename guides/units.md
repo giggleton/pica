@@ -1,15 +1,16 @@
 # Units and scale
 
-Pica returns integers: the font's own numbers, or HarfBuzz's positions at a scale the caller
-gives. It never returns points or fractions of its own. This guide is how to turn them into a
+Pica returns the font's own numbers, or HarfBuzz's positions at a scale the caller gives: integers,
+but for an outline's coordinates, which are floats as the font's outline draws them. It never
+returns points or fractions of its own. This guide is how to turn them into a
 size, and why the scale option exists.
 
 ## Font units
 
 A font is drawn on a grid of its own, `units_per_em` units to the em, the em being the font size.
 Lato has 2000 units per em, so at 12 points one font unit is 12 / 2000 of a point. Everything
-`Pica.info/1`, `Pica.nominal_advances/2`, `Pica.glyph_boxes/2` and, without `:scale`,
-`Pica.shape/3` return is in these units. To turn a length into points:
+`Pica.info/1`, `Pica.nominal_advances/2`, `Pica.glyph_boxes/2`, `Pica.glyph_outlines/2` and,
+without `:scale`, `Pica.shape/3` return is in these units. To turn a length into points:
 
 ```elixir
 points = length * size_in_points / Pica.info(font).units_per_em

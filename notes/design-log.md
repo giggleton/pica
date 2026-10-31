@@ -12,8 +12,9 @@ entry by name, never the whole file. The `docs-sync` skill routes changes here;
 Pica measures text from font files, through HarfBuzz's shaping. A caller registers font files
 under a family name, then asks, by family and face, for each string's glyphs: which glyph, which
 characters it came from, how far it advances with kerning, ligatures and contextual forms applied,
-and how far it would advance unshaped. It also reports font-wide metrics and glyph bounding boxes,
-in font units or at a scale the caller gives, with HarfBuzz's rounding. Nothing is drawn.
+and how far it would advance unshaped. It also reports font-wide metrics, glyph bounding boxes
+and glyph outlines, in font units or at a scale the caller gives, with HarfBuzz's rounding.
+Nothing is rendered.
 
 Its first consumer is Giggly (`~/repos/giggly`), whose layout is sized by measured text and must
 match R's svglite 2.2.2, which measures through HarfBuzz. Later, any Elixir code that lays out
@@ -180,6 +181,45 @@ public API as misuse is. Rejected: `:none` in its place (holes in a plausible li
 meaning two things in `glyph_boxes/2`); `{:error, reason}` for the call (every measurement
 unwrapped for a case only a bug produces).
 
+**`glyph_outlines/2` draws each glyph as skrifa draws it** (Steve, 2026-10-31).
+`Pica.glyph_outlines(font, glyph_ids)` belongs to the `glyph_*` family and checks its ids as
+`glyph_boxes/2` does. Each glyph is drawn at the default location, unscaled and unhinted, in
+skrifa's FreeType path style, named rather than left to skrifa's default: a contour whose first
+point is off the curve starts at its last point, or halfway between its last and first, as
+FreeType starts it. A glyph that draws nothing is `:none`, as its box is, and so is every glyph of
+a font with no outlines. Rejected: `outlines/2` (outside the `glyph_*` family its ids belong to).
+
+**An outline's coordinates are always floats** (Steve, 2026-10-31). They are skrifa's 32-bit
+floats, unrounded: whole numbers in TrueType, a scaled composite's points rounded as FreeType
+rounds them unscaled, and fractions where a CFF charstring puts them. They are the font's points
+as skrifa draws them, so "Pica never returns floats it computed itself" still holds. Rejected:
+integers where a coordinate is whole (the type of a number would depend on the font's format,
+and a caller would match both).
+
+**Outline commands are flat tuples, one list per glyph** (Steve, 2026-10-31). `{:move, x, y}`,
+`{:line, x, y}`, `{:quad, cx, cy, x, y}`, `{:cubic, c1x, c1y, c2x, c2y, x, y}` and `:close`, in
+drawing order. `:close` draws the line back to the start, so no `:line` to the start comes before
+it, as skrifa and fontTools both draw. Rejected: points as `{x, y}` pairs (twice the terms to
+build and to read); a list per contour (`:move` and `:close` already mark where one begins and
+ends).
+
+**Outlines are checked on a sample of each font's glyphs** (Steve, 2026-10-31).
+`glyph_outlines.py` draws, per test font, `glyph_metrics.py`'s text, the digits and `.notdef`,
+plus every TrueType kind whose drawing takes a rule: each composite that scales a component, each
+contour with no point on the curve, and the first ten contours that start off it, each glyph with
+its reasons. fontTools 4.67.0 found scaled composites in both Latos and Lobster, off-curve starts
+in Lobster (1,568) and Liberation, all-off-curve contours in Liberation, and cubics in Source
+Serif's CFF. It draws through a `BasePen`, which splits quadratic runs as skrifa does, with
+composites composed and each point `otRound`ed first, as `glyph_metrics.py` reads boxes.
+Rejected: every glyph (19.7 MB over 19,516 glyphs, measured).
+
+**Each contour is compared as a closed loop, within 1/1000 of a unit** (Steve, 2026-10-31).
+skrifa starts a contour that begins off the curve where FreeType does; fontTools starts it at its
+first point on the curve. Otherwise the two draw the same segments (both sources read), so the
+test makes the closing line explicit, ignores which segment each loop starts from, and allows a
+thousandth of a unit for CFF's fractions in 32-bit floats. Rejected: rotating fontTools' output to
+FreeType's rule in the generator (truth worked out by hand, not read from a tool).
+
 **`shape/3` shapes one string** (Steve, 2026-10-25). `shape(font, text, options)` returns one
 string's glyphs, as `glyph_ids/2` takes one string, with one result type, and options such as a
 feature apply to that string alone. harfrust keeps a font's prepared layout tables on the font,
@@ -279,6 +319,17 @@ half a millisecond, and longer text on a dirty CPU scheduler, through a second N
 the function. Rejected: always dirty (a scheduler switch on every label, which could double a
 batch); always normal (a paragraph would hold a scheduler for milliseconds).
 
+**Boxes and outlines move more than 64 glyphs to a dirty scheduler** (2026-10-31; boxes, Steve).
+Drawing costs up to about 6 µs a glyph and boxing, which draws the same outline, up to about 5
+(`bench/glyph_outlines.exs`): a label's 24 glyphs drawn in 25–75 µs; the slowest hundred glyphs of
+a test font (Source Serif's CFF) drawn in 0.57 ms and boxed in 0.46 ms; a whole font drawn in
+7–20 ms and boxed in 1.4–6 ms. So up to 64 glyphs, every label, measure on a normal scheduler in
+under 0.4 ms, and more on a dirty CPU scheduler, through a second NIF name sharing the function,
+as `shape/3` splits long text. Rejected: always normal (a whole font would hold a scheduler for
+up to 20 ms); always dirty (a scheduler switch on every label); a cut at 100 glyphs (its slowest
+hundred measured over half a millisecond); a cut of its own for boxes (one count for the
+measures that draw outlines).
+
 **Licence notices come from cargo-about** (Steve, 2026-10-25). The NIF compiles in 46 crates,
 all permissive (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0), and most ask for their notice to
 travel with the code. cargo-about, installed with `cargo install`, not a dependency, writes
@@ -317,6 +368,11 @@ measured by `bench/shaping.exs` (Benchee, dev only), never by the suite.
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-31 — Draw each glyph's outline as skrifa draws it, in FreeType's path style; §4:
+  "`glyph_outlines/2` draws each glyph as skrifa draws it", "An outline's coordinates are always
+  floats", "Outline commands are flat tuples", "Outlines are checked on a sample", "Each contour
+  is compared as a closed loop", "Boxes and outlines move more than 64 glyphs to a dirty
+  scheduler"
 - 2026-10-25 — Prepare releases: the release workflow, RELEASE.md, licence notices and guides;
   §4: "Licence notices come from cargo-about"
 - 2026-10-25 — Keep each font's shape plans, and shape long text on a dirty scheduler; §4: "A
@@ -347,7 +403,5 @@ One line per milestone, newest first: the date, the commit's subject as its titl
 
 Open: CI on macOS (`erlef/setup-beam` runs on Linux and Windows only); variable fonts beyond the
 default instance (recommended after 0.1.0); a batch shaping function, if step 9's benchmarks
-call for one; `glyph_boxes/2` over a whole font takes 2–3 ms on a normal scheduler, so the glyph
-measures may want the same split as `shape/3`; whether to rescan installed fonts, which are scanned once per VM; harfrust's
-fallback mark gap (§4, "A known harfrust difference"), to report
-upstream.
+call for one; whether to rescan installed fonts, which are scanned once per VM; harfrust's
+fallback mark gap (§4, "A known harfrust difference"), to report upstream.

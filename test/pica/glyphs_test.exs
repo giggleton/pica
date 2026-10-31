@@ -8,7 +8,8 @@ defmodule Pica.GlyphsTest do
   # Golden: test/fixtures/glyph_metrics.exs is fontTools' reading of every glyph of every test font
   # (its header names the version), written by test/support/ground_truth/glyph_metrics.py: hmtx's
   # advance widths, each glyph's control box (its header says how each outline format is read),
-  # and the best Unicode character map.
+  # and the best Unicode character map. Every font has more than 64 glyphs, so its boxes are
+  # measured on the dirty scheduler's NIF name.
   # A changed test font or a regenerated fixture moves it; nothing in Pica does.
   @fixture "test/fixtures/glyph_metrics.exs"
   @external_resource @fixture
@@ -74,7 +75,7 @@ defmodule Pica.GlyphsTest do
     test "an id at the glyph count is refused, naming the font's last glyph id", context do
       last_glyph_id = context.glyph_count - 1
 
-      for measure <- [&Pica.nominal_advances/2, &Pica.glyph_boxes/2] do
+      for measure <- [&Pica.nominal_advances/2, &Pica.glyph_boxes/2, &Pica.glyph_outlines/2] do
         error =
           assert_raise ArgumentError, fn ->
             measure.(context.font, [0, context.glyph_count])
@@ -85,7 +86,7 @@ defmodule Pica.GlyphsTest do
     end
 
     test "a negative id or one that is not an integer is refused, naming it", %{font: font} do
-      for measure <- [&Pica.nominal_advances/2, &Pica.glyph_boxes/2],
+      for measure <- [&Pica.nominal_advances/2, &Pica.glyph_boxes/2, &Pica.glyph_outlines/2],
           not_a_glyph_id <- [-1, 1.0, "A", nil] do
         error = assert_raise ArgumentError, fn -> measure.(font, [not_a_glyph_id]) end
         assert error.message =~ inspect(not_a_glyph_id)
@@ -95,6 +96,7 @@ defmodule Pica.GlyphsTest do
     test "no glyph ids measure to an empty list", %{font: font} do
       assert Pica.nominal_advances(font, []) == []
       assert Pica.glyph_boxes(font, []) == []
+      assert Pica.glyph_outlines(font, []) == []
     end
   end
 
@@ -113,9 +115,12 @@ defmodule Pica.GlyphsTest do
       |> TableDirectory.empty_table("glyf")
       |> Pica.load()
 
-    [m] = Pica.glyph_ids(font, "M")
-    error = assert_raise ArgumentError, fn -> Pica.glyph_boxes(font, [m]) end
-    assert error.message =~ "glyph #{m}"
+    [glyph_id] = Pica.glyph_ids(font, "M")
+
+    for measure <- [&Pica.glyph_boxes/2, &Pica.glyph_outlines/2] do
+      error = assert_raise ArgumentError, fn -> measure.(font, [glyph_id]) end
+      assert error.message =~ "glyph #{glyph_id}"
+    end
   end
 
   # The glyphs whose measures differ from the fixture's, as {glyph_id, actual, expected}.

@@ -9,7 +9,7 @@ mod installed;
 mod shaping;
 
 use font::{FontResource, Info, LoadError};
-use glyphs::{GlyphBox, GlyphError};
+use glyphs::{GlyphBox, GlyphError, GlyphOutline};
 use installed::InstalledFace;
 use rustler::{Binary, ResourceArc};
 use shaping::{Direction, Glyph, Settings, ShapingError};
@@ -27,9 +27,8 @@ fn load(bytes: Binary, index: u64) -> Result<(ResourceArc<FontResource>, Info), 
     font::load(bytes.as_slice(), index).map(|(resource, info)| (ResourceArc::new(resource), info))
 }
 
-// The glyph measurements stay on a normal scheduler: measured on the test fonts, a call for a
-// hundred glyphs takes well under a millisecond (boxes tens of microseconds for TrueType, under
-// two hundred for CFF; advances and the character map a few), and a label is a handful.
+// The character map and the advances stay on a normal scheduler: measured on the test fonts, a
+// call for a hundred glyphs takes a few microseconds, and a label is a handful.
 
 /// The glyph each character of `text` maps to, 0 for a character the font lacks.
 #[rustler::nif]
@@ -46,13 +45,49 @@ fn nominal_advances(
     glyphs::nominal_advances(&resource, &glyph_ids)
 }
 
-/// Each glyph's control box, or `:none` for a glyph with no outline.
+// Boxes and outlines draw each glyph's outline. Boxing costs up to about 5 microseconds a glyph
+// and drawing up to about 6 (bench/glyph_outlines.exs: a label's 24 glyphs drawn in 25 to 75
+// microseconds; the slowest hundred glyphs of a test font, CFF, boxed in 0.46 ms and drawn in
+// 0.57 ms; every glyph of a font boxed in 1.4 to 6 ms and drawn in 7 to 20 ms), so up to 64
+// glyphs, every label, measure on a normal scheduler in under 0.4 ms, and more on a dirty one.
+// `Pica.glyph_boxes/2` and `Pica.glyph_outlines/2` each choose between two names, which share
+// one function.
+
+/// Each glyph's control box, or `:none` for a glyph with no outline. For up to 64 glyphs.
 #[rustler::nif]
 fn glyph_boxes(
     resource: ResourceArc<FontResource>,
     glyph_ids: Vec<u32>,
 ) -> Result<Vec<GlyphBox>, GlyphError> {
     glyphs::glyph_boxes(&resource, &glyph_ids)
+}
+
+/// `glyph_boxes`, on a dirty CPU scheduler, for more than 64 glyphs.
+#[rustler::nif(schedule = "DirtyCpu")]
+fn glyph_boxes_many_glyphs(
+    resource: ResourceArc<FontResource>,
+    glyph_ids: Vec<u32>,
+) -> Result<Vec<GlyphBox>, GlyphError> {
+    glyphs::glyph_boxes(&resource, &glyph_ids)
+}
+
+/// Each glyph's outline, as drawing commands in font units, or `:none` for a glyph that draws
+/// nothing. For up to 64 glyphs.
+#[rustler::nif]
+fn glyph_outlines(
+    resource: ResourceArc<FontResource>,
+    glyph_ids: Vec<u32>,
+) -> Result<Vec<GlyphOutline>, GlyphError> {
+    glyphs::glyph_outlines(&resource, &glyph_ids)
+}
+
+/// `glyph_outlines`, on a dirty CPU scheduler, for more than 64 glyphs.
+#[rustler::nif(schedule = "DirtyCpu")]
+fn glyph_outlines_many_glyphs(
+    resource: ResourceArc<FontResource>,
+    glyph_ids: Vec<u32>,
+) -> Result<Vec<GlyphOutline>, GlyphError> {
+    glyphs::glyph_outlines(&resource, &glyph_ids)
 }
 
 // Shaping costs about 0.45 microseconds a character once the font keeps a shape plan for the

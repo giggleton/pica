@@ -65,6 +65,28 @@ defmodule Pica.Native do
   def glyph_boxes(_resource, _glyph_ids), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
+  # `glyph_boxes/2` on a dirty CPU scheduler, for more glyphs than `Pica.glyph_boxes/2`'s limit
+  # for a normal one; the same function behind another name.
+  @spec glyph_boxes_many_glyphs(reference(), [non_neg_integer()]) ::
+          {:ok, [{integer(), integer(), integer(), integer()} | :none]} | {:error, term()}
+  def glyph_boxes_many_glyphs(_resource, _glyph_ids), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  # Each glyph's outline as a list of drawing commands in font units, as
+  # `t:Pica.outline_command/0` describes them, every coordinate a float, or `:none` for a glyph
+  # that draws nothing.
+  @spec glyph_outlines(reference(), [non_neg_integer()]) ::
+          {:ok, [[tuple() | :close] | :none]} | {:error, term()}
+  def glyph_outlines(_resource, _glyph_ids), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  # `glyph_outlines/2` on a dirty CPU scheduler, for more glyphs than `Pica.glyph_outlines/2`'s
+  # limit for a normal one; the same function behind another name.
+  @spec glyph_outlines_many_glyphs(reference(), [non_neg_integer()]) ::
+          {:ok, [[tuple() | :close] | :none]} | {:error, term()}
+  def glyph_outlines_many_glyphs(_resource, _glyph_ids), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
   # Shapes `text`, valid UTF-8, into `%Pica.Glyph{}` structs, applying `features` (`{tag, value}`,
   # the tag four bytes) to the whole text, with the direction, script and language given, or
   # guessed (direction, script) or left unset (language) where `nil`, and at `scale`, a positive

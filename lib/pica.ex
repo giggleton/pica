@@ -5,8 +5,8 @@ defmodule Pica do
   Pica measures text from font files. A caller registers loaded fonts under a family name, then
   asks, by family and face, for each string's glyphs: which glyph, which characters it came from,
   how far it advances once kerning, ligatures and contextual forms are applied, and how far it
-  would advance unshaped. It also reports font-wide metrics and glyph bounding boxes. Nothing is
-  drawn.
+  would advance unshaped. It also reports font-wide metrics, glyph bounding boxes, and glyph
+  outlines as drawing commands. Nothing is rendered.
 
   A family name is looked up first among the fonts given to Pica, then, unless the caller opts
   out, among the fonts installed on the machine. Pica never substitutes one font for another:
@@ -53,8 +53,9 @@ defmodule Pica do
 
   `nominal_advances/2` gives how far each glyph moves the pen on, as the font stores it, before
   shaping adjusts it for kerning or context. `glyph_boxes/2` gives the box around each glyph's
-  outline. Both measure at the font's default location: a variable font, which can vary its
-  weight or width, is measured as it is drawn when no variation is chosen.
+  outline, and `glyph_outlines/2` the outline itself, as the commands that draw it. All three
+  measure at the font's default location: a variable font, which can vary its weight or width, is
+  measured as it is drawn when no variation is chosen.
 
   ## Shaping
 
@@ -174,6 +175,37 @@ defmodule Pica do
   """
   @type glyph_box :: {integer(), integer(), integer(), integer()}
 
+  @typedoc """
+  A glyph's outline, in font units: the commands that draw it, in order, measured from the point
+  where the glyph is drawn, on the baseline, with y rising upward.
+
+  Each contour, a closed loop of the outline, begins with a `:move` to its start and ends with
+  `:close`, which draws the line back to the start; no `:line` to the start comes before it. In
+  between, `:line` draws a straight line to its point, `:quad` a quadratic curve steered by one
+  control point, and `:cubic` a cubic curve steered by two (see `t:outline_command/0`). A
+  TrueType curve that runs through several control points arrives as one `:quad` per control
+  point, split at the points on the curve that lie halfway between them.
+
+  A contour whose first point is off the curve starts at its last point, or halfway between its
+  last and first when both are off the curve, as FreeType starts it. Coordinates are floats: a
+  TrueType glyph's are whole font units, a glyph built from a scaled copy of another having each
+  point rounded to the nearest unit, and a CFF glyph's can fall between units.
+  """
+  @type glyph_outline :: [outline_command()]
+
+  @typedoc """
+  One command of a `t:glyph_outline/0`: `{:move, x, y}`, `{:line, x, y}`,
+  `{:quad, control_x, control_y, x, y}`,
+  `{:cubic, first_control_x, first_control_y, second_control_x, second_control_y, x, y}`, or
+  `:close`.
+  """
+  @type outline_command ::
+          {:move, float(), float()}
+          | {:line, float(), float()}
+          | {:quad, float(), float(), float(), float()}
+          | {:cubic, float(), float(), float(), float(), float(), float()}
+          | :close
+
   @shape_options NimbleOptions.new!(
                    features: [
                      type: {:custom, Pica.ShapeOptions, :features, []},
@@ -226,6 +258,8 @@ defmodule Pica do
                  )
 
   @long_text_bytes 1000
+
+  @many_glyphs 64
 
   @face_options NimbleOptions.new!(
                   for face <- [:plain, :bold, :italic, :bold_italic] do
@@ -436,7 +470,8 @@ defmodule Pica do
   space.
 
   Raises `ArgumentError` for a glyph id the font does not have, or for a glyph whose outline
-  does not read.
+  does not read. More than 64 glyphs are measured on a dirty scheduler, so a whole font's boxes
+  never hold up the processes around it.
 
   ## Examples
 
@@ -450,8 +485,57 @@ defmodule Pica do
 
     font
     |> Font.resource()
-    |> Native.glyph_boxes(glyph_ids)
+    |> measure_on_scheduler(glyph_ids, &Native.glyph_boxes/2, &Native.glyph_boxes_many_glyphs/2)
     |> measured!()
+  end
+
+  @doc """
+  Each glyph's outline (see `t:glyph_outline/0`), or `:none` for a glyph that draws nothing,
+  such as a space, and for every glyph of a font with no outlines.
+
+  Outlines are drawn at the font's default location, unscaled and unhinted: the font's own
+  points, never adjusted to a pixel grid.
+
+  Raises `ArgumentError` for a glyph id the font does not have, or for a glyph whose outline
+  does not read. More than 64 glyphs are drawn on a dirty scheduler, so a whole font's outlines
+  never hold up the processes around it.
+
+  ## Examples
+
+  Lato draws "I" as one rectangle:
+
+      iex> {:ok, font} = Pica.load(File.read!("test/fonts/Lato-Regular.ttf"))
+      iex> Pica.glyph_outlines(font, Pica.glyph_ids(font, "I "))
+      [
+        [{:move, 377.0, 0.0}, {:line, 183.0, 0.0}, {:line, 183.0, 1433.0}, {:line, 377.0, 1433.0}, :close],
+        :none
+      ]
+  """
+  @spec glyph_outlines(Font.t(), [non_neg_integer()]) :: [glyph_outline() | :none]
+  def glyph_outlines(font, glyph_ids) when is_list(glyph_ids) do
+    check_glyph_ids!(font, glyph_ids)
+
+    font
+    |> Font.resource()
+    |> measure_on_scheduler(
+      glyph_ids,
+      &Native.glyph_outlines/2,
+      &Native.glyph_outlines_many_glyphs/2
+    )
+    |> measured!()
+  end
+
+  # Boxing and drawing cost up to about 5 and 6 microseconds a glyph, so more than @many_glyphs
+  # would hold a normal scheduler for over a quarter of a millisecond; they go to the dirty
+  # scheduler's name for the measure, which costs a switch, a few microseconds, that a label's
+  # glyphs never pay.
+  defp measure_on_scheduler(resource, glyph_ids, normal_measure, _dirty_measure)
+       when length(glyph_ids) <= @many_glyphs do
+    normal_measure.(resource, glyph_ids)
+  end
+
+  defp measure_on_scheduler(resource, glyph_ids, _normal_measure, dirty_measure) do
+    dirty_measure.(resource, glyph_ids)
   end
 
   @doc """
