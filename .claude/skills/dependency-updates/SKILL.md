@@ -144,8 +144,10 @@ When you report, keep the seam visible between what you reasoned and what you ra
   the gate, so nothing else would catch a doc build it broke.
 - **Check the lock diff for transitive movement**, and confirm in `mix.lock` that a raised
   requirement did or did not move anything.
-- If the project keeps a third-party attribution file, regenerate it: a version bump makes it
-  stale.
+- **A change to `native/pica/Cargo.lock` regenerates `THIRD_PARTY_NOTICES.md`**, with the
+  `cargo about generate` command in `native/pica/about.hbs`'s header: a version bump makes it
+  stale. A crate under a licence `about.toml` does not accept fails the run, and accepting one is
+  the user's decision.
 
 ## Reporting
 

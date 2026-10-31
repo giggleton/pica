@@ -1,0 +1,27 @@
+# cargo-about's configuration for THIRD_PARTY_NOTICES.md, the licence notices of every crate
+# compiled into Pica's NIF. The command is in about.hbs's header. A crate under a licence not
+# accepted here fails the run: accepting a new one is a decision for the maintainer.
+accepted = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "Unicode-3.0",
+]
+# Only what is compiled into a release build, for the targets the release workflow builds.
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+targets = [
+    "aarch64-apple-darwin",
+    "aarch64-unknown-linux-gnu",
+    "aarch64-unknown-linux-musl",
+    "arm-unknown-linux-gnueabihf",
+    "riscv64gc-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-gnu",
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+]

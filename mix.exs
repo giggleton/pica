@@ -97,7 +97,8 @@ defmodule Pica.MixProject do
         "checksum-Elixir.Pica.Native.exs",
         "mix.exs",
         "README.md",
-        "LICENSE"
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md"
       ]
     ]
   end
@@ -106,7 +107,14 @@ defmodule Pica.MixProject do
     [
       main: "Pica",
       source_ref: "v#{@version}",
-      extras: ["README.md", "LICENSE"]
+      extras: [
+        "README.md",
+        "guides/registering-fonts.md",
+        "guides/units.md",
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md"
+      ],
+      groups_for_extras: [Guides: ~r"guides/"]
     ]
   end
 end

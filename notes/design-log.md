@@ -279,6 +279,14 @@ half a millisecond, and longer text on a dirty CPU scheduler, through a second N
 the function. Rejected: always dirty (a scheduler switch on every label, which could double a
 batch); always normal (a paragraph would hold a scheduler for milliseconds).
 
+**Licence notices come from cargo-about** (Steve, 2026-10-25). The NIF compiles in 46 crates,
+all permissive (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0), and most ask for their notice to
+travel with the code. cargo-about, installed with `cargo install`, not a dependency, writes
+`THIRD_PARTY_NOTICES.md` from a template, every crate's licence text included, and refuses a
+licence `about.toml` does not accept. The file ships in the package. Rejected: cargo-deny as a
+CI gate plus a separate list (two tools for one job); a script of ours over `cargo metadata`
+(Pica code doing a tool's job).
+
 **The harness is Giggly's, copied, without mutation testing** (Steve, 2026-10-24). Pica takes
 Giggly's copies of Tack's files, which carry fixes Tack's templates do not yet have
 (`.claude/rules/dependencies.md`, "How it works"), and drops Giggly's `muex`, its skill and the
@@ -309,6 +317,8 @@ measured by `bench/shaping.exs` (Benchee, dev only), never by the suite.
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-25 — Prepare releases: the release workflow, RELEASE.md, licence notices and guides;
+  §4: "Licence notices come from cargo-about"
 - 2026-10-25 — Keep each font's shape plans, and shape long text on a dirty scheduler; §4: "A
   font keeps the shape plans it builds", "`shape/3` moves long text to a dirty scheduler"
 - 2026-10-25 — Find fonts by name: registered families first, then the nearest installed face of

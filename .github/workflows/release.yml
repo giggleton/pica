@@ -1,0 +1,82 @@
+name: Release
+
+# Builds the NIF for every target `RustlerPrecompiled` downloads for (its ten defaults) and, on a
+# version tag, attaches each build to the GitHub release of that tag, where `Pica.Native`'s
+# `base_url` looks for it. A push to main that touches the crate builds every target too, without
+# publishing, so a target that stops building is found before a release. Started from resvg_nif's
+# workflow; RELEASE.md gives the order a release goes in.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "native/**"
+      - ".github/workflows/release.yml"
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build_release:
+    name: NIF ${{ matrix.nif }} - ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 2.15 loads on OTP 22 and later, so one build serves every OTP Pica supports; the
+        # versions here must match `nif_versions` in lib/pica/native.ex.
+        nif: ["2.15"]
+        job:
+          - { target: x86_64-apple-darwin, os: macos-15 }
+          - { target: aarch64-apple-darwin, os: macos-15 }
+          # cross builds the Linux targets in containers with an older glibc, so a build loads on
+          # older distributions too.
+          - { target: arm-unknown-linux-gnueabihf, os: ubuntu-22.04, use-cross: true }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
+          - { target: riscv64gc-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
+          - { target: x86_64-pc-windows-gnu, os: windows-2022 }
+          - { target: x86_64-pc-windows-msvc, os: windows-2022 }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Read the project's version
+        shell: bash
+        run: |
+          echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: ${{ matrix.job.target }}
+
+      - name: Build the NIF
+        id: build-crate
+        uses: philss/rustler-precompiled-action@v1.1.5
+        with:
+          project-name: pica
+          project-version: ${{ env.PROJECT_VERSION }}
+          target: ${{ matrix.job.target }}
+          nif-version: ${{ matrix.nif }}
+          use-cross: ${{ matrix.job.use-cross }}
+          project-dir: "native/pica"
+
+      - name: Keep the build as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.build-crate.outputs.file-name }}
+          path: ${{ steps.build-crate.outputs.file-path }}
+
+      - name: Attach the build to the tag's release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            ${{ steps.build-crate.outputs.file-path }}
+        if: startsWith(github.ref, 'refs/tags/')
