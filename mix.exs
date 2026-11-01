@@ -1,7 +1,7 @@
 defmodule Pica.MixProject do
   use Mix.Project
 
-  @version "0.1.1-dev"
+  @version "0.1.1"
   @source_url "https://github.com/giggleton/pica"
   @crate_manifest "native/pica/Cargo.toml"
 
