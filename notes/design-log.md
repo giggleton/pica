@@ -62,6 +62,15 @@ of Lato's kerning); `harfbuzz_ex` (a GenServer per font, no metrics, reads paths
 by rendering with `resvg` or `vix` (an ink box is not an advance: "A" is 8.052 inked, 8.125
 advanced). Even a correct GPOS reader would not do ligatures or contextual forms, which R applies.
 
+**Rustler is a boundary dependency only when it is loaded** (2026-10-31). A source build calls
+Rustler while `Pica.Native` compiles, so strict boundaries must list it; a project that downloads
+the binary has no Rustler, and Boundary warned "unknown boundary Rustler" twice compiling Pica
+0.1.0 there. Both declarations add `{Rustler, :compile}` behind `Code.ensure_loaded?(Rustler)`, the
+test `RustlerPrecompiled` makes before it builds. Rejected: dropping the entry (Pica's own build
+then fails on forbidden references to Rustler); making `rustler` required (every user compiles a
+build tool they never run); taking the boundary compiler out of a user's build (`use Boundary` in
+`lib/` still needs the package, and Pica's own checks would differ from what ships).
+
 **The crates: harfrust, read-fonts and skrifa, wuff** (2026-10-24). harfrust is HarfBuzz's own
 Rust port, matching HarfBuzz 15.0.0, built on Google Fonts' read-fonts; skrifa gives metrics and
 outlines; wuff decodes WOFF and WOFF2. Rejected: `rustybuzz`/`ttf-parser` (no release since
@@ -368,6 +377,8 @@ measured by `bench/shaping.exs` (Benchee, dev only), never by the suite.
 One line per milestone, newest first: the date, the commit's subject as its title (so
 `git log --grep` finds it), and the §4 entries it settled. The commit message tells the story.
 
+- 2026-10-31 — List Rustler as a boundary dependency only when it is loaded; §4: "Rustler is a
+  boundary dependency only when it is loaded"
 - 2026-10-31 — Draw each glyph's outline as skrifa draws it, in FreeType's path style; §4:
   "`glyph_outlines/2` draws each glyph as skrifa draws it", "An outline's coordinates are always
   floats", "Outline commands are flat tuples", "Outlines are checked on a sample", "Each contour

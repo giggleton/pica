@@ -88,9 +88,12 @@ defmodule Pica do
   """
 
   # The root boundary. It lists every outside library a sub-boundary does, since a sub-boundary
-  # may list only what its parent lists (`.claude/rules/dependencies.md`).
+  # may list only what its parent lists (`.claude/rules/dependencies.md`); Rustler only when it is
+  # loaded, as `Pica.Native` explains.
   use Boundary,
-    deps: [NimbleOptions, {Mix, :compile}, {Rustler, :compile}, {RustlerPrecompiled, :compile}],
+    deps:
+      [NimbleOptions, {Mix, :compile}, {RustlerPrecompiled, :compile}] ++
+        if(Code.ensure_loaded?(Rustler), do: [{Rustler, :compile}], else: []),
     exports: []
 
   alias Pica.{Font, Fonts, Glyph, Native}

@@ -231,11 +231,14 @@ semver or the changelog).
   checks the `use Boundary` declarations, so a forbidden cross-namespace call is a compiler
   warning and therefore a gate failure. The root is `Pica`, with each domain a sub-boundary
   beneath it. `Pica.Native` lists `Mix`, `Rustler` and `RustlerPrecompiled` as `:compile` deps,
-  since `use RustlerPrecompiled` calls them only while the module compiles. It is strict
-  everywhere — `boundary: [default: [type: :strict]]` in `mix.exs`, pinned by the declarations
-  test, which also fails on any declaration setting `type: :relaxed` — with each domain a
-  sub-boundary whose `deps:` is its contract, and an outside library listed by the one domain that
-  owns it and by the root. `mix boundary.spec` prints the current graph. Six constraints govern
+  since `use RustlerPrecompiled` calls them only while the module compiles; `Rustler` only when
+  it is loaded, as it is not in a project that downloads the binary, so Boundary there finds no
+  unknown dependency (design-log §4, "Rustler is a boundary dependency only when it is loaded").
+  It is strict everywhere — `boundary: [default: [type: :strict]]` in `mix.exs`, pinned by the
+  declarations test, which also fails on any declaration setting `type: :relaxed` — with each
+  domain a sub-boundary whose `deps:` is its contract, and an outside library listed by the one
+  domain that owns it and by the root. `mix boundary.spec` prints the current graph. Six
+  constraints govern
   any change to it, each found by compiling rather than by reading the docs: **(1)** `check: [in:
   false]` / `[out: false]` is legal **only on a top-level boundary**, and such a boundary may not
   contain sub-boundaries; **(2)** a boundary with `check.in` false may not be exported from, nor

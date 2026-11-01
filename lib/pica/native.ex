@@ -13,9 +13,13 @@ defmodule Pica.Native do
   # it.
 
   # `use RustlerPrecompiled` runs at compile time only: it reads the project's version, picks a
-  # binary or builds one with Rustler, and leaves an `@on_load` hook that loads it.
+  # binary or builds one with Rustler, and leaves an `@on_load` hook that loads it. Rustler is
+  # listed only when it is loaded, the test `RustlerPrecompiled` makes before it builds: a project
+  # that downloads the binary has no Rustler, and Boundary warns of a dependency it cannot find.
   use Boundary,
-    deps: [{Mix, :compile}, {Rustler, :compile}, {RustlerPrecompiled, :compile}],
+    deps:
+      [{Mix, :compile}, {RustlerPrecompiled, :compile}] ++
+        if(Code.ensure_loaded?(Rustler), do: [{Rustler, :compile}], else: []),
     exports: []
 
   version = Mix.Project.config()[:version]
